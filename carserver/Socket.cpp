@@ -1,4 +1,4 @@
-#include "Socket.h"
+#include "socket.h"
 
 Socket::Socket(void)
 {
@@ -10,8 +10,8 @@ Socket::Socket(void)
 
 Socket::Socket(bool isUdp, int port)
 {
-	this.isUdp = isUdp;
-	this.port = port;
+	this->isUdp = isUdp;
+	this->port = port;
 	localSocket=0;
 	remoteSocket=0;
 }
@@ -87,29 +87,29 @@ Socket::~Socket(void)
 	}
  }
 	
-void Socket::connect(std::string to)
+int Socket::connect(std::string to)
 {	
 	int ret = 0;
 	if(isUdp)
 	{
-		ret = remoteSocket = socket(AF_INET, SOCK_DGRAM, 0)
-		if(ret != 0)
+		remoteSocket = socket(AF_INET, SOCK_DGRAM, 0);
+		if(remoteSocket != 0)
 		{
-			printf("failed to create socket %d\n", ret);
-			return ret;
+			printf("failed to create socket %d\n", remoteSocket);
+			return remoteSocket;
 		}
 		memset(&remoteAddr, 0, sizeof(remoteAddr));
 		remoteAddr.sin_family = AF_INET;
 		remoteAddr.sin_addr.s_addr = inet_addr(to.c_str());
 		remoteAddr.sin_port = htons(port);
 	}
-	else(!isUdp)
+	else
 	{
-		ret = remoteSocket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-		if(ret != 0)
+		remoteSocket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+		if(remoteSocket != 0)
 		{
-			printf("Socket fail %d\n", ret);
-			return ret;
+			printf("Socket fail %d\n", remoteSocket);
+			return remoteSocket;
 		}
 			
 		if(inet_addr(to.c_str()) == -1)
@@ -125,7 +125,7 @@ void Socket::connect(std::string to)
 		remoteAddr.sin_port = htons( port );
 		 
 		//Connect to remote server
-		ret = connect(remoteSocket , (struct sockaddr *)&remoteAddr , sizeof(remoteAddr));
+		ret = ::connect(remoteSocket , (struct sockaddr *)&remoteAddr , sizeof(remoteAddr));
 		if (ret != 0)
 		{
 			printf("connect failed. Error: %d", ret);
@@ -136,11 +136,12 @@ void Socket::connect(std::string to)
 	return ret;
 }
 
-void Socket::waitForConnection(int port)
+void Socket::waitForConnection()
 {
 	if(!isUdp)
 	{
-		if((remoteSocket = accept(localSocket, (sockaddr*) &remoteAddr, sizeof(remoteAddr)) < 0)
+		unsigned int clientLen = sizeof(remoteAddr);
+		if((remoteSocket = accept(localSocket, (sockaddr*) &remoteAddr, &clientLen)) < 0)
 			printf("Accept failed \n");
 	}
 }
@@ -149,7 +150,7 @@ void Socket::disconnect()
 	close(remoteSocket);
  }
 
-void Socket::write(const char* msg)
+int Socket::write(const char* msg)
 {
 	int n = 0;
 	int msgLen = strlen(msg);
@@ -161,12 +162,12 @@ void Socket::write(const char* msg)
 	else
 	{
 		printf("Msglen: %d \n", msgLen);
-		if( (n = send(remoteSocket, msg, msgLen), 0) < 0)
+		if( (n = send(remoteSocket, msg, msgLen, 0)) < 0)
 			printf("Error sending TCP\n");
 	}
 	return n;
 }
-char[] Socket::read()
+char* Socket::read()
 {
 	char buffer[1024];
 	if(isUdp)

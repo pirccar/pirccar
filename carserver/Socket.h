@@ -1,5 +1,7 @@
 #pragma once
 #include <stdio.h>
+#include <stdlib.h>
+#include <string>
 #include <string.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -26,9 +28,9 @@ class Socket
 	
 	void initialize(); //initialize local sockets
 	int connect(std::string to); //connect to a remote socket(tcp), udp uses this to initialize the remote socket
-	void waitForConnection(int port); //wait for a connection from a remote socket (tcp)
+	void waitForConnection(); //wait for a connection from a remote socket (tcp)
 	void disconnect(); //disconnect the socket
 	
 	int write(const char* msg); //Sends a string and return number of chars sent
-	char[] read(); //reads a string from a remote socket
+	char* read(); //reads a string from a remote socket
 };
