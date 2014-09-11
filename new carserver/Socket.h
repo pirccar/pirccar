@@ -32,5 +32,5 @@ class Socket
 	void disconnect(); //disconnect the socket
 	
 	int write(const char* msg); //Sends a string and return number of chars sent
-	char* read(); //reads a string from a remote socket
+	int read(char* msg, int size); //reads a string from a remote socket, pointer to buffer, buffer size
 };

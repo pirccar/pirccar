@@ -167,18 +167,20 @@ int Socket::write(const char* msg)
 	}
 	return n;
 }
-char* Socket::read()
+int Socket::read(char* msg, int size)
 {
-	char buffer[1024];
+	int ret = 0;
 	if(isUdp)
 	{
-		if(recvfrom(remoteSocket, buffer, sizeof(buffer), 0, NULL, NULL) < 0)
+		ret = recvfrom(remoteSocket, msg, size, 0, NULL, NULL);
+		if(ret < 0)
 			printf("recvfrom failed\n");
 	}
 	else
 	{
-		if(recv(remoteSocket, buffer, sizeof(buffer), 0) < 0)
+		ret = recv(remoteSocket, msg, size, 0);
+		if(ret < 0)
 			printf("recv failed\n");
 	}
-	return buffer;
+	return ret;
 }
