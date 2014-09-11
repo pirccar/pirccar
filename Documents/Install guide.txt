@@ -17,3 +17,22 @@
 
 ---------libjpeg------------
 sudo apt-get install libjpeg-dev
+
+
+---------bcm2835------------
+1. ladda ner wget http://www.airspayce.com/mikem/bcm2835/bcm2835-1.36.tar.gz
+2. kompilera 
+	tar zxvf bcm2835-1.xx.tar.gz
+	cd bcm2835-1.xx
+	./configure
+	make
+	sudo make check
+	sudo make install
+
+--------wiringpi------------
+1. ladda ner https://git.drogon.net/?p=wiringPi;a=summary ta senaste och klicka på snapshot
+2. flytta över filen till pi'en
+3. kompilera
+	tar xfz wiringPi-xxxxxx.tar.gz
+	cd wiringPi-xxxxxx
+	./build

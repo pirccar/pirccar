@@ -18,7 +18,6 @@
 #include <ifaddrs.h>
 
 #include "camera.h"
-#include "graphics.h"
 #include "jpge.h"
 #include <jpeglib.h>
 #include "lodepng.h"
@@ -29,10 +28,10 @@
 //#include <wiringPi.h>
 #include "PCD8544.h"
 
-#define MAIN_TEXTURE_WIDTH 128
-#define MAIN_TEXTURE_HEIGHT 128
+#define MAIN_TEXTURE_WIDTH 160
+#define MAIN_TEXTURE_HEIGHT 120
 #define IMAGE_QUALITY 100
-#define BUFFER_SIZE (MAIN_TEXTURE_WIDTH * MAIN_TEXTURE_HEIGHT)*4
+#define BUFFER_SIZE (MAIN_TEXTURE_WIDTH * MAIN_TEXTURE_HEIGHT)*3
 #define BLOCK_SIZE 2048
 #define IRCAMERA RPI_V2_GPIO_P1_18
 
@@ -210,14 +209,14 @@ void compressAndSend(unsigned char buffer[],int frameServerSocket, struct sockad
 	int count = 0;
 	int bufferSize = imageWidth*imageHeight*4;
 	//convert from RGBA to RGB
-	for(int i = 0; i < bufferSize; i+=4)
+	/*for(int i = 0; i < bufferSize; i+=4)
 	{
 		rgbBuffer[count] = buffer[i];
 		rgbBuffer[count+1] = buffer[i+1];
 		rgbBuffer[count+2] = buffer[i+2];
 			
 		count+=3;
-	}
+	}*/
 	
 	unsigned char* mem = NULL;
 	unsigned long mem_size = 0;
@@ -244,7 +243,7 @@ void compressAndSend(unsigned char buffer[],int frameServerSocket, struct sockad
     
     while( cinfo.next_scanline < cinfo.image_height )
     {
-        row_pointer[0] = &rgbBuffer[ cinfo.next_scanline * cinfo.image_width *  cinfo.input_components];
+        row_pointer[0] = &buffer[ cinfo.next_scanline * cinfo.image_width *  cinfo.input_components];
         jpeg_write_scanlines( &cinfo, row_pointer, 1 );
     }
 	
@@ -625,8 +624,11 @@ void *sendThreadUDP(void *ptr)
 	*/
 	
 	//The camera
-	StopCamera();
-	CCamera* cam = StartCamera(imageWidth, imageHeight, 30, 1, true);
+	//StopCamera();
+	Camera cam;
+	
+	cam.setWidthHeight(160, 120);
+	cam.initialize();
 	
 	std::string serial_command_buf;
 	int serial_command_len = 0;
@@ -682,22 +684,13 @@ void *sendThreadUDP(void *ptr)
 	{
 		//Send texture			
 		int n = 0;
-		unsigned char imageBuffer[imageWidth*imageHeight*4];
+		unsigned char* imageBuffer = NULL;
 		//printf("Trying to read camera \n");
-		if((n = cam->ReadFrame(0,imageBuffer,sizeof(imageBuffer))) > 0) //read an image from the camera
+		imageBuffer = cam.getBuffer();
+		if(imageBuffer != NULL) //read an image from the camera
 		{
-			//Compress and send to client
-			//printf("Sending camera \n");
 			compressAndSend(imageBuffer, frameServerSocket, frameServerAddr);
-			/*compressImage();
-			
-			int nSent = 0;
-			if((nSent = sendto(frameServerSocket, tmpBuffer, outputSize, 0, (struct sockaddr*)&frameServerAddr, sizeof(frameServerAddr))) != outputSize)
-			{
-				connected = false;
-				printf("UDP disconnected\n");
-				printf("Outputsize: %d  nSent: %d\n", outputSize, nSent);
-			}*/
+
 			batCount++;
 			stableCount++;
 			gearCount++;
@@ -858,7 +851,7 @@ void *sendThreadUDP(void *ptr)
 	RS232_CloseComport(gpsComport);
 	
 	printf("stopping camera\n");
-	StopCamera();
+	//StopCamera();
 	
 	printf("closing socket\n");
 	close(frameServerSocket);

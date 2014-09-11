@@ -39,10 +39,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/pi/public/rccar
+CMAKE_SOURCE_DIR = /home/pi/carserver
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/pi/public/rccar
+CMAKE_BINARY_DIR = /home/pi/carserver
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -69,9 +69,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/pi/public/rccar/CMakeFiles /home/pi/public/rccar/CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/pi/carserver/CMakeFiles /home/pi/carserver/CMakeFiles/progress.marks
 	$(MAKE) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/pi/public/rccar/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/pi/carserver/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -159,30 +159,6 @@ camera.cpp.s:
 	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/camera.cpp.s
 .PHONY : camera.cpp.s
 
-cameracontrol.o: cameracontrol.cpp.o
-.PHONY : cameracontrol.o
-
-# target to build an object file
-cameracontrol.cpp.o:
-	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/cameracontrol.cpp.o
-.PHONY : cameracontrol.cpp.o
-
-cameracontrol.i: cameracontrol.cpp.i
-.PHONY : cameracontrol.i
-
-# target to preprocess a source file
-cameracontrol.cpp.i:
-	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/cameracontrol.cpp.i
-.PHONY : cameracontrol.cpp.i
-
-cameracontrol.s: cameracontrol.cpp.s
-.PHONY : cameracontrol.s
-
-# target to generate assembly for a file
-cameracontrol.cpp.s:
-	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/cameracontrol.cpp.s
-.PHONY : cameracontrol.cpp.s
-
 carserver.o: carserver.cpp.o
 .PHONY : carserver.o
 
@@ -206,30 +182,6 @@ carserver.s: carserver.cpp.s
 carserver.cpp.s:
 	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/carserver.cpp.s
 .PHONY : carserver.cpp.s
-
-graphics.o: graphics.cpp.o
-.PHONY : graphics.o
-
-# target to build an object file
-graphics.cpp.o:
-	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/graphics.cpp.o
-.PHONY : graphics.cpp.o
-
-graphics.i: graphics.cpp.i
-.PHONY : graphics.i
-
-# target to preprocess a source file
-graphics.cpp.i:
-	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/graphics.cpp.i
-.PHONY : graphics.cpp.i
-
-graphics.s: graphics.cpp.s
-.PHONY : graphics.s
-
-# target to generate assembly for a file
-graphics.cpp.s:
-	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/graphics.cpp.s
-.PHONY : graphics.cpp.s
 
 jpge.o: jpge.cpp.o
 .PHONY : jpge.o
@@ -342,15 +294,9 @@ help:
 	@echo "... camera.o"
 	@echo "... camera.i"
 	@echo "... camera.s"
-	@echo "... cameracontrol.o"
-	@echo "... cameracontrol.i"
-	@echo "... cameracontrol.s"
 	@echo "... carserver.o"
 	@echo "... carserver.i"
 	@echo "... carserver.s"
-	@echo "... graphics.o"
-	@echo "... graphics.i"
-	@echo "... graphics.s"
 	@echo "... jpge.o"
 	@echo "... jpge.i"
 	@echo "... jpge.s"
