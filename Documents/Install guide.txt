@@ -1,0 +1,19 @@
+--------raspicam------------
+
+1. ladda ner https://sourceforge.net/projects/raspicam/files/?
+2. flytta över filerna till pi'en
+3.1 kompilera
+  	tar xvzf raspicamxx.tgz
+	cd raspicamxx
+	mkdir build
+	cd build
+	cmake ..
+
+3.2 installera
+	make
+	sudo make install
+	sudo ldconfig
+
+
+---------libjpeg------------
+sudo apt-get install libjpeg-dev
