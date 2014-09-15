@@ -2,6 +2,7 @@
 #include "PCD8544.h"
 #include <cstdio>
 
+
 LcdScreen::LcdScreen(void)
 {
 }
@@ -28,5 +29,19 @@ void LcdScreen::clear(void)
 {
 	printf("Hepp2!\n");
 	LCDclear();
+	LCDdisplay();
+}
+
+void LcdScreen::printText(std::string output, int x, int y)
+{
+	LCDclear();
+	LCDdrawstring_P(x,y, output.c_str());
+	LCDdisplay();
+}
+
+void LcdScreen::printImage(const uint8_t* img, int x, int y, int w, int h)
+{
+	LCDclear();
+	LCDdrawbitmap(x, y, img, w, h, 255);
 	LCDdisplay();
 }

@@ -107,6 +107,7 @@ namespace RCClient
 
             udpClient = new UdpClient(port);
             udpClient.Client.ReceiveTimeout = 1000;
+            udpClient.Client.ReceiveBufferSize = 310000;
             groupEP = new IPEndPoint(IPAddress.Any, port);
         }
 

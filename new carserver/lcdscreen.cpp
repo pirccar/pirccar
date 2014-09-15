@@ -30,3 +30,17 @@ void LcdScreen::clear(void)
 	LCDclear();
 	LCDdisplay();
 }
+
+void LcdScreen::printText(std::string output, int x, int y)
+{
+	LCDclear();
+	LCDdrawstring_P(x,y, output.c_str());
+	LCDdisplay();
+}
+
+void LcdScreen::printImage(const uint8_t* img, int x, int y, int w, int h)
+{
+	LCDclear();
+	LCDdrawbitmap(x, y, image_data_tritech, w, h, 255);
+	LCDdisplay();
+}

@@ -74,7 +74,7 @@ namespace RCClient
                         bitmap.UnlockBits(data);
                     }*/
 
-
+                    
                     //FAST RGB, Pointer in C# = unsafe
                     unsafe
                     {
@@ -86,7 +86,7 @@ namespace RCClient
                         {
                             for (int i = 0; i < bitmap.Width * bitmap.Height; i++)
                             {
-                                ptr[i] = (ptr[i] & 0x0000ff) << 16 | (ptr[i] & 0x00FF00) | (ptr[i] & 0xFF0000) >> 16;
+                                ptr[i] = (ptr[i] & 0x000000ff) << 16 | (ptr[i] & 0x0000FF00) | (ptr[i] & 0x00FF0000) >> 16 | (ptr[i] & 0xFF000000);
                             }
                         }
 
@@ -95,6 +95,48 @@ namespace RCClient
                         int bytes = Math.Abs(data.Stride) * bitmap.Height;
                         output = new Byte[bytes];
                         Marshal.Copy(data.Scan0, output, 0, bytes);
+
+                        ptr = null;
+                        bitmap.UnlockBits(data);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                output = null;
+            }
+
+            return output;
+        }
+
+        public uint[] DecompressToIntArray(Byte[] arr, bool flipRB)
+        {
+            uint[] output;
+            try
+            {
+                using (Image image = Image.FromStream(new MemoryStream(arr)))
+                {
+                    unsafe
+                    {
+                        Bitmap bitmap = new Bitmap(image);
+                        BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, bitmap.PixelFormat);
+                        uint* ptr = (uint*)data.Scan0;
+                        output = new uint[bitmap.Width * bitmap.Height];
+                        if (flipRB)
+                        {
+                            for (int i = 0; i < bitmap.Width * bitmap.Height; i++)
+                            {
+                                output[i] = (ptr[i] & 0x000000ff) << 16 | (ptr[i] & 0x0000FF00) | (ptr[i] & 0x00FF0000) >> 16 | (ptr[i] & 0xFF000000);
+                            }
+                        }
+
+                        width = bitmap.Width;
+                        height = bitmap.Height;
+                       
+                        //Marshal.Copy(data.Scan0, output, 0, bitmap.Width * bitmap.Height);
+
+                        ptr = null;
+                        bitmap.UnlockBits(data);
                     }
                 }
             }
