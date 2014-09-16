@@ -1,0 +1,46 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/pi/public/rccar/carserver.cpp
+lcdthread.h
+/home/pi/public/rccar/lcdthread.h
+servocontrolthread.h
+/home/pi/public/rccar/servocontrolthread.h
+iostream
+-
+pthread.h
+-
+
+/home/pi/public/rccar/lcdscreen.h
+string
+-
+stdint.h
+-
+
+/home/pi/public/rccar/lcdthread.h
+thread.h
+/home/pi/public/rccar/thread.h
+lcdscreen.h
+/home/pi/public/rccar/lcdscreen.h
+
+/home/pi/public/rccar/servocontrol.h
+string
+-
+stdint.h
+-
+
+/home/pi/public/rccar/servocontrolthread.h
+thread.h
+/home/pi/public/rccar/thread.h
+servocontrol.h
+/home/pi/public/rccar/servocontrol.h
+
+/home/pi/public/rccar/thread.h
+pthread.h
+-
+

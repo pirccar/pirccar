@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 2.8)
+project( carserver )
+SET(COMPILE_DEFINITIONS -Werror)
+include_directories(/usr/local/include)
+include_directories(/home/pi/public/rccar)
+link_directories(/opt/vc/lib)
+link_directories(/usr/local/lib)
+add_executable(carserver carserver.cpp thread.cpp rs232.c lcdthread.cpp lcdscreen.cpp servocontrol.cpp servocontrolthread.cpp PCD8544.c pca9685.cpp)
+
+target_link_libraries(carserver libjpeg.so libbcm_host.so libbcm2835.a wiringPi raspicam GLESv2 EGL ${OpenCV_LIBS})
