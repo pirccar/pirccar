@@ -17,4 +17,6 @@ private:
 	virtual void mainLoop(void);
 	virtual void init(void);
 	virtual void cleanup(void);
+	
+	double AdcThread::readADCValue(int channel);
 };

@@ -135,6 +135,30 @@ PCD8544.c.s:
 	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/PCD8544.c.s
 .PHONY : PCD8544.c.s
 
+adcthread.o: adcthread.cpp.o
+.PHONY : adcthread.o
+
+# target to build an object file
+adcthread.cpp.o:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/adcthread.cpp.o
+.PHONY : adcthread.cpp.o
+
+adcthread.i: adcthread.cpp.i
+.PHONY : adcthread.i
+
+# target to preprocess a source file
+adcthread.cpp.i:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/adcthread.cpp.i
+.PHONY : adcthread.cpp.i
+
+adcthread.s: adcthread.cpp.s
+.PHONY : adcthread.s
+
+# target to generate assembly for a file
+adcthread.cpp.s:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/adcthread.cpp.s
+.PHONY : adcthread.cpp.s
+
 camera.o: camera.cpp.o
 .PHONY : camera.o
 
@@ -183,53 +207,53 @@ carserver.cpp.s:
 	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/carserver.cpp.s
 .PHONY : carserver.cpp.s
 
-jpge.o: jpge.cpp.o
-.PHONY : jpge.o
+lcdscreen.o: lcdscreen.cpp.o
+.PHONY : lcdscreen.o
 
 # target to build an object file
-jpge.cpp.o:
-	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/jpge.cpp.o
-.PHONY : jpge.cpp.o
+lcdscreen.cpp.o:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/lcdscreen.cpp.o
+.PHONY : lcdscreen.cpp.o
 
-jpge.i: jpge.cpp.i
-.PHONY : jpge.i
+lcdscreen.i: lcdscreen.cpp.i
+.PHONY : lcdscreen.i
 
 # target to preprocess a source file
-jpge.cpp.i:
-	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/jpge.cpp.i
-.PHONY : jpge.cpp.i
+lcdscreen.cpp.i:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/lcdscreen.cpp.i
+.PHONY : lcdscreen.cpp.i
 
-jpge.s: jpge.cpp.s
-.PHONY : jpge.s
+lcdscreen.s: lcdscreen.cpp.s
+.PHONY : lcdscreen.s
 
 # target to generate assembly for a file
-jpge.cpp.s:
-	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/jpge.cpp.s
-.PHONY : jpge.cpp.s
+lcdscreen.cpp.s:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/lcdscreen.cpp.s
+.PHONY : lcdscreen.cpp.s
 
-lodepng.o: lodepng.cpp.o
-.PHONY : lodepng.o
+lcdthread.o: lcdthread.cpp.o
+.PHONY : lcdthread.o
 
 # target to build an object file
-lodepng.cpp.o:
-	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/lodepng.cpp.o
-.PHONY : lodepng.cpp.o
+lcdthread.cpp.o:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/lcdthread.cpp.o
+.PHONY : lcdthread.cpp.o
 
-lodepng.i: lodepng.cpp.i
-.PHONY : lodepng.i
+lcdthread.i: lcdthread.cpp.i
+.PHONY : lcdthread.i
 
 # target to preprocess a source file
-lodepng.cpp.i:
-	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/lodepng.cpp.i
-.PHONY : lodepng.cpp.i
+lcdthread.cpp.i:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/lcdthread.cpp.i
+.PHONY : lcdthread.cpp.i
 
-lodepng.s: lodepng.cpp.s
-.PHONY : lodepng.s
+lcdthread.s: lcdthread.cpp.s
+.PHONY : lcdthread.s
 
 # target to generate assembly for a file
-lodepng.cpp.s:
-	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/lodepng.cpp.s
-.PHONY : lodepng.cpp.s
+lcdthread.cpp.s:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/lcdthread.cpp.s
+.PHONY : lcdthread.cpp.s
 
 pca9685.o: pca9685.cpp.o
 .PHONY : pca9685.o
@@ -279,6 +303,30 @@ rs232.c.s:
 	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/rs232.c.s
 .PHONY : rs232.c.s
 
+thread.o: thread.cpp.o
+.PHONY : thread.o
+
+# target to build an object file
+thread.cpp.o:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/thread.cpp.o
+.PHONY : thread.cpp.o
+
+thread.i: thread.cpp.i
+.PHONY : thread.i
+
+# target to preprocess a source file
+thread.cpp.i:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/thread.cpp.i
+.PHONY : thread.cpp.i
+
+thread.s: thread.cpp.s
+.PHONY : thread.s
+
+# target to generate assembly for a file
+thread.cpp.s:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/thread.cpp.s
+.PHONY : thread.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -291,24 +339,30 @@ help:
 	@echo "... PCD8544.o"
 	@echo "... PCD8544.i"
 	@echo "... PCD8544.s"
+	@echo "... adcthread.o"
+	@echo "... adcthread.i"
+	@echo "... adcthread.s"
 	@echo "... camera.o"
 	@echo "... camera.i"
 	@echo "... camera.s"
 	@echo "... carserver.o"
 	@echo "... carserver.i"
 	@echo "... carserver.s"
-	@echo "... jpge.o"
-	@echo "... jpge.i"
-	@echo "... jpge.s"
-	@echo "... lodepng.o"
-	@echo "... lodepng.i"
-	@echo "... lodepng.s"
+	@echo "... lcdscreen.o"
+	@echo "... lcdscreen.i"
+	@echo "... lcdscreen.s"
+	@echo "... lcdthread.o"
+	@echo "... lcdthread.i"
+	@echo "... lcdthread.s"
 	@echo "... pca9685.o"
 	@echo "... pca9685.i"
 	@echo "... pca9685.s"
 	@echo "... rs232.o"
 	@echo "... rs232.i"
 	@echo "... rs232.s"
+	@echo "... thread.o"
+	@echo "... thread.i"
+	@echo "... thread.s"
 .PHONY : help
 
 
