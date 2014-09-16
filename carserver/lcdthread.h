@@ -10,13 +10,18 @@
 
 class LcdThread : public Thread
 {
+
 public:
 	LcdThread(void);
 	void setChannel(int channel, double value);
+	void setConnected(bool connected);
+	void setGotConfig(bool gotConfig);
 	
 private:
 	LcdScreen* lcdscreen;
 	bool showIp;
+	bool connected;
+	bool gotConfig;
 	double channel0;
 	double channel2;
 	std::string localAdresses[10];

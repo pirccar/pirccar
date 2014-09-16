@@ -31,6 +31,8 @@ LcdThread::LcdThread(void)
 : Thread()
 {
 	showIp = false;
+	connected = false;
+	gotConfig = false;
 }
 
 void LcdThread::setChannel(int channel, double value)
@@ -41,9 +43,19 @@ void LcdThread::setChannel(int channel, double value)
 		channel2 = value;
 }
 
+void LcdThread::setConnected(bool connected)
+{
+	this->connected = connected;
+}
+
+void LcdThread::setGotConfig(bool gotConfig)
+{
+	this->gotConfig = gotConfig;
+}
+
 void LcdThread::mainLoop(void)
 {
-	if(true)
+	if(!connected)
 	{
 		if(showIp)
 		{
@@ -72,7 +84,7 @@ void LcdThread::mainLoop(void)
 		}
 		showIp = !showIp;
 	}
-	else if(false) //No config recieved at all
+	else if(!gotConfig) //No config recieved at all
 	{
 		std::string output = "Car server\nConnected\nNeed config";
 		lcdscreen->printText(output);

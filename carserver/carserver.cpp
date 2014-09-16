@@ -36,13 +36,10 @@
 #define BLOCK_SIZE 2048
 #define IRCAMERA RPI_V2_GPIO_P1_18
 
-unsigned char tmpBuffer[(MAIN_TEXTURE_WIDTH*MAIN_TEXTURE_HEIGHT)*4];
 bool gotConfig = false;
 bool ready = false;
 bool obstructed = false;
 bool globalConnected = false;
-bool lcdOn = true;
-bool lcdConfig = false;
 char *frameIP;
 
 int imageWidth;
@@ -53,11 +50,7 @@ int throttleFChannel = 3;
 int throttleBChannel = 4;
 int gearChannel = -1;
 
-int framesPerSecond = 30;
-int outputSize = 0;
 sig_atomic_t alarm_counter;
-clock_t mes_start;
-bool mes_ready = true;
 int recTime = 10;
 bool stabilized = false;
 int sendFailCounter = 0;
@@ -73,8 +66,6 @@ std::string chann3String;
 
 int gpsComport = 22; //usb = 16 uart = 22
 int gpsBaud = 9600; //usb = 4800, uart = 9600
-double lastCarbat = 0.0;
-double lastPibat = 0.0;
 
 
 // pin setup
@@ -84,105 +75,10 @@ int _dc = 3;
 int _rst = 0;
 int _cs = 2;
 
-//Tritech bitmap
-const uint8_t image_data_tritech[] = {
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00, 0x00, 0x80, 0x80, 0x80, 
-0x80, 0x80, 0x80, 0x80, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x80, 0x80, 
-0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00, 0x00, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00, 0x00, 
-0x00, 0x00, 0x00, 0x00, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00, 0x00, 0x00, 0x00, 0x80, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 
-0x00, 0x00, 0x00, 0x80, 0x80, 0x00, 0x00, 0x00, 0x00, 0x03, 0x03, 0x03, 0x03, 0xFF, 0xFF, 0x03, 0x03, 0x03, 0x03, 0x00, 
-0x00, 0xFF, 0xFF, 0xFF, 0x83, 0x83, 0x83, 0x83, 0x83, 0xC3, 0xE7, 0x7E, 0x1C, 0x00, 0x00, 0xC6, 0xEF, 0xEF, 0xEF, 0xC6, 
-0x00, 0x03, 0x03, 0x03, 0x03, 0xFF, 0xFF, 0x03, 0x03, 0x03, 0x03, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xC3, 0xC3, 0xC3, 0xC3, 
-0x03, 0x03, 0x00, 0xF0, 0xF8, 0xFE, 0x07, 0x03, 0x03, 0x01, 0x01, 0x01, 0x03, 0x07, 0x07, 0x00, 0x00, 0xFF, 0xFF, 0xC0, 
-0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 
-0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0x01, 0x01, 0x01, 0x03, 0x07, 0x1F, 0x3C, 0xF0, 0xC0, 0x00, 0x00, 0x30, 
-0x79, 0x79, 0x79, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 
-0xE0, 0xE0, 0xE0, 0xE0, 0xE0, 0xE0, 0x00, 0x03, 0x0F, 0x1F, 0x38, 0x70, 0xE0, 0xC0, 0xC0, 0xC0, 0xE0, 0x70, 0x70, 0x00, 
-0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-0x00, 0x00, 0x00, 0x00 };
-
-//Compresses a raw RBGA image to jpeg
-void compressImage()
-{
-	unsigned char rgbBuffer[(MAIN_TEXTURE_WIDTH*MAIN_TEXTURE_HEIGHT)*3];
-	int count = 0;
-	
-	//convert from RGBA to RGB
-	for(int i = 0; i < BUFFER_SIZE; i+=4)
-	{
-		rgbBuffer[count] = tmpBuffer[i];
-		rgbBuffer[count+1] = tmpBuffer[i+1];
-		rgbBuffer[count+2] = tmpBuffer[i+2];
-			
-		count+=3;
-	}
-
-	unsigned char* mem = NULL;
-	unsigned long mem_size = 0;
-	struct jpeg_compress_struct cinfo;
-	struct jpeg_error_mgr jerr;
-	JSAMPROW row_pointer[1];
-	cinfo.err = jpeg_std_error(&jerr);
-	
-	jpeg_create_compress(&cinfo);
-	jpeg_mem_dest(&cinfo, &mem, &mem_size);
-	
-	//jpeg_stdio_dest(&cinfo, outfile);
-	
-	cinfo.image_width = MAIN_TEXTURE_WIDTH;  
-    cinfo.image_height = MAIN_TEXTURE_HEIGHT;
-    cinfo.input_components = 3;
-    cinfo.in_color_space = JCS_RGB;
-    
-	
-    jpeg_set_defaults( &cinfo );
-    jpeg_set_quality(&cinfo, IMAGE_QUALITY, TRUE);
-	
-    jpeg_start_compress( &cinfo, TRUE );
-    
-    while( cinfo.next_scanline < cinfo.image_height )
-    {
-        row_pointer[0] = &rgbBuffer[ cinfo.next_scanline * cinfo.image_width *  cinfo.input_components];
-        jpeg_write_scanlines( &cinfo, row_pointer, 1 );
-    }
-	
-    jpeg_finish_compress( &cinfo );
-	jpeg_destroy_compress( &cinfo );
-   
-	//printf("Compressed size: %d \n", mem_size);
-	memcpy(tmpBuffer, mem, mem_size);
-	outputSize = (int)mem_size;
-	
-	delete[] mem;
-}
-
 //Compresses and image and sends it to a client
 void compressAndSend(unsigned char buffer[],int frameServerSocket, struct sockaddr_in frameServerAddr)
 {
-	unsigned char rgbBuffer[(imageWidth*imageHeight)*3];
 	int count = 0;
-	int bufferSize = imageWidth*imageHeight*4;
-	//convert from RGBA to RGB
-	/*for(int i = 0; i < bufferSize; i+=4)
-	{
-		rgbBuffer[count] = buffer[i];
-		rgbBuffer[count+1] = buffer[i+1];
-		rgbBuffer[count+2] = buffer[i+2];
-			
-		count+=3;
-	}*/
 	
 	unsigned char* mem = NULL;
 	unsigned long mem_size = 0;
@@ -219,6 +115,7 @@ void compressAndSend(unsigned char buffer[],int frameServerSocket, struct sockad
 	
 	int nSent = 0;
 	
+	printf("Send size: %lu \n", mem_size); 
 	if((nSent = sendto(frameServerSocket, mem, mem_size, 0, (struct sockaddr*)&frameServerAddr, sizeof(frameServerAddr))) != mem_size)
 	{
 		printf("Can't send\n");
@@ -227,6 +124,7 @@ void compressAndSend(unsigned char buffer[],int frameServerSocket, struct sockad
 	}
 	else
 	{
+		printf("Sent: %d \n", nSent);
 		//printf("Sent to: %s \n", inet_ntoa(frameServerAddr.sin_addr));
 		sendFailCounter = 0;
 	}
@@ -246,18 +144,6 @@ void sendToClient(int clientSocket, const char* msg){
 		printf("Error sending message \n");
 }
 
-//Deprecated function
-bool sendCamera(int clientSocket, int length){
-	//printf("Msglen: %d \n", length);
-	int n = 0;
-	if( (n = write(clientSocket, tmpBuffer, length)) < 0)
-	{
-		printf("Error sending message \n");
-		return false;
-	}
-	
-	return true;
-}
 
 //Parse incoming messages
 int parseMessage(char buf[], int size){
@@ -444,7 +330,7 @@ void *sendThreadUDP(void *ptr)
 	//StopCamera();
 	Camera cam;
 	
-	cam.setWidthHeight(160, 120);
+	cam.setWidthHeight(imageWidth, imageHeight);
 	cam.initialize();
 	
 	std::string serial_command_buf;
@@ -502,12 +388,12 @@ void *sendThreadUDP(void *ptr)
 		//Send texture			
 		int n = 0;
 		unsigned char* imageBuffer = NULL;
-		//printf("Trying to read camera \n");
+		printf("Trying to read camera \n");
 		imageBuffer = cam.getBuffer();
 		if(imageBuffer != NULL) //read an image from the camera
 		{
 			compressAndSend(imageBuffer, frameServerSocket, frameServerAddr);
-
+			printf("Exiting compress and send \n");
 			batCount++;
 			stableCount++;
 			gearCount++;
@@ -518,6 +404,7 @@ void *sendThreadUDP(void *ptr)
 			continue;
 		}
 		
+		printf("Before prevstab\n");
 		//Unstable / stable connection
 		if(prev_stab_state && !stabilized)
 		{
@@ -527,6 +414,7 @@ void *sendThreadUDP(void *ptr)
 			printf("connection unstable \n");
 		}
 		
+		printf("Before stabilized\n");
 		if(!stabilized)
 		{
 			clock_gettime(CLOCK_REALTIME, &now);
@@ -542,6 +430,7 @@ void *sendThreadUDP(void *ptr)
 		//let the client know about the connection status
 		if(stableCount >= 24)
 		{
+			printf("Ready unready\n");
 			if(stabilized)
 			{
 				if(sendto(frameServerSocket, "ready", 5, 0, (struct sockaddr*)&frameServerAddr, sizeof(frameServerAddr)) != 5)
@@ -563,7 +452,7 @@ void *sendThreadUDP(void *ptr)
 		//Send battery info
 		if(batCount >= 12)
 		{
-			
+			printf("Sending battery info \n");
 			std::string sendStr = chann0String+ ":" + chann1String + ":" + chann2String + ":" + chann3String;;
 			//sendStr += 
 			const char* send = sendStr.c_str();
@@ -578,6 +467,7 @@ void *sendThreadUDP(void *ptr)
 		}
 		else if(gearCount >= 32) //send gear info
 		{
+			printf("Before gear\n");
 			int gearValue = getPWMOff(gearChannel);
 			if(gearValue < 470)
 			{
@@ -598,13 +488,14 @@ void *sendThreadUDP(void *ptr)
 		prev_stab_state = stabilized;
 		unsigned char serial_buf[256];
 		
+		
 		//read serialport (GPS)
-		//printf("GPS time \n");
+		printf("GPS time \n");
 		int ser_read = RS232_PollComport(gpsComport, serial_buf, 256);
-		//printf("GPS Read done \n");
+		printf("GPS Read done \n");
 		if(ser_read > 0) //found data
 		{
-			//printf("GPS found data \n");
+			printf("GPS found data \n");
 			serial_buf[ser_read] = 0;
 			std::string sub_command((char*)serial_buf);
 			std::string comp("\n");
@@ -783,6 +674,7 @@ int main()
 		printf("Waiting for config file \n");
 		connected = true;
 		globalConnected = true;
+		lcd->setConnected(globalConnected);
 		sendFailCounter = 0;
 		int recvCounter = 0;
 		
@@ -810,9 +702,9 @@ int main()
 				printf("Client disconnected \n");
 				connected = false;
 				globalConnected = false;
+				lcd->setConnected(globalConnected);
 				senderStarted = false;
 				//clientSocket = -1;
-				lcdConfig = false;
 				stopPWM();
 				alarm(0);
 				break;
@@ -842,7 +734,7 @@ int main()
 						senderStarted = true;
 					}
 					gotConfig = false;
-					lcdConfig = true;
+					lcd->setGotConfig(true);
 					ready = true;
 				}
 			}
@@ -853,7 +745,6 @@ int main()
 				connected = false;
 				globalConnected = false;
 				senderStarted = false;
-				lcdConfig = false;
 				clientSocket = -1;
 				stopPWM();
 			}
@@ -877,7 +768,6 @@ int main()
 	}
 	stopPWM();
 	pthread_join(t1, NULL);
-	lcdOn = false;
 	lcd->stop();
 	adc->stop();
 	//pthread_join(lcd_thread, NULL);

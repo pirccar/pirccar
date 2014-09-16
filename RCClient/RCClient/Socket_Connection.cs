@@ -46,9 +46,15 @@ namespace RCClient
                 if (adresses[i].AddressFamily == AddressFamily.InterNetwork)
                 {
                     if (ip.Contains("25.") && adresses[i].ToString().Contains("25."))
+                    {
                         local = adresses[i];
+                        break;
+                    }
                     else if (!ip.Contains("25.") && !adresses[i].ToString().Contains("25."))
+                    {
                         local = adresses[i];
+                        break;
+                    }
                 }
             }
 
@@ -73,7 +79,7 @@ namespace RCClient
                 }
                 catch (Exception e)
                 {
-                    System.Windows.Forms.MessageBox.Show("Couldn't connect to server", "Connection error");
+                    System.Windows.Forms.MessageBox.Show(e.Message, "Connection error");
                 }
             }
         }

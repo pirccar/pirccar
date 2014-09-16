@@ -29,6 +29,7 @@
 		cam.setFormat(this->format);
 		cam.setWidth(this->width);
 		cam.setHeight(this->height);
+		cam.setAWB(raspicam::RASPICAM_AWB_OFF);
 		if(!cam.open()) //opens the camera, aka initializes all internal settings and HW, making the camera ready to capture
 		{
 			printf("Error opening camera \n");

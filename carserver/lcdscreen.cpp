@@ -9,7 +9,7 @@ LcdScreen::LcdScreen(void)
 	
 void LcdScreen::init(void)
 {
-	// pin setup (refers to WiringPi internal numbering not the physical pin header or GP-I/O on Pi)
+	// pin setup
 	int _din = 4;
 	int _sclk = 5;
 	int _dc = 3;
