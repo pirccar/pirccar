@@ -56,7 +56,7 @@ namespace RCClient
                     {
                         //data = connection.readFrame();
                         data = connection.readFrame();
-                        if (data != null)
+                        if (data != null && data.Length > 0)
                             dataReady = true;
                     }
                 }

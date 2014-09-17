@@ -5,6 +5,7 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Windows.Forms;
 using System.IO;
 using ZLibNet;
 
@@ -206,7 +207,15 @@ namespace RCClient
         private byte[] readFrameTCP()
         {
             byte[] rec = new byte[10000000];
-            int size = tcpClient.Receive(rec);
+            int size = 0;
+            try
+            {
+                size = tcpClient.Receive(rec);
+            }
+            catch(Exception e)
+            {
+                MessageBox.Show(e.Message);
+            }
 
             byte[] ret = new byte[size];
 

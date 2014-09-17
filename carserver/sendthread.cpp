@@ -61,6 +61,18 @@ void SendThread::setHalted(bool halted)
 	}
 }
 
+void SendThread::setChannel(int channel, std::string value)
+{
+	if(channel == 0)
+		chann0String = value;
+	else if(channel == 1)
+		chann1String = value;
+	else if(channel == 2)
+		chann2String = value;
+	else if(channel == 3)
+		chann3String = value;
+}
+
 void SendThread::readGPS()
 {
 	unsigned char serial_buf[256];

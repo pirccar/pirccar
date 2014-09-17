@@ -25,6 +25,7 @@ public:
 	bool getStabilized();
 	int getSendfailcounter();
 	void setHalted(bool halted);
+	void setChannel(int channel, std::string value);
 	
 private:
 	Socket socket;

@@ -6,10 +6,11 @@ AdcThread::AdcThread(void)
 {
 }
 
-AdcThread::AdcThread(LcdThread* lcdThread)
+AdcThread::AdcThread(LcdThread* lcdThread, SendThread* sendThread)
 : Thread()
 {
 	this->lcdThread = lcdThread;
+	this->sendThread = sendThread;
 }
 
 void AdcThread::mainLoop(void)
@@ -19,8 +20,18 @@ void AdcThread::mainLoop(void)
 	channel2 = readADCValue(2);
 	channel3 = readADCValue(3);
 	
+	channel0S = getADCString(0);
+	channel1S = getADCString(1);
+	channel2S = getADCString(2);
+	channel3S = getADCString(3);
+	
 	lcdThread->setChannel(0, channel0);
 	lcdThread->setChannel(2, channel2);
+	
+	sendThread->setChannel(0, channel0S);
+	sendThread->setChannel(1, channel1S);
+	sendThread->setChannel(2, channel2S);
+	sendThread->setChannel(3, channel3S);
 	
 	sleep(3);
 }
@@ -80,4 +91,16 @@ double AdcThread::readADCValue(int channel)
 	delete[] output;
 	
 	return ret;
+}
+
+std::string AdcThread::getADCString(int channel)
+{
+	double val = readADCValue(channel);
+	std::ostringstream os;
+	os << channel; //channel
+	os << val; //value
+	std::string marker = "V";
+	std::string str = marker + os.str();
+	
+	return str;
 }

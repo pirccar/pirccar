@@ -73,74 +73,6 @@ int _dc = 3;
 int _rst = 0;
 int _cs = 2;
 
-//Compresses and image and sends it to a client
-void compressAndSend(unsigned char buffer[],int frameServerSocket, struct sockaddr_in frameServerAddr)
-{
-	unsigned char* mem = NULL;
-	unsigned long mem_size = 0;
-	struct jpeg_compress_struct cinfo;
-	struct jpeg_error_mgr jerr;
-	JSAMPROW row_pointer[1];
-	cinfo.err = jpeg_std_error(&jerr);
-	
-	jpeg_create_compress(&cinfo);
-	jpeg_mem_dest(&cinfo, &mem, &mem_size);
-	
-	//jpeg_stdio_dest(&cinfo, outfile);
-	
-	cinfo.image_width = imageWidth;  
-    cinfo.image_height = imageHeight;
-    cinfo.input_components = 3;
-    cinfo.in_color_space = JCS_RGB;
-    
-	
-    jpeg_set_defaults( &cinfo );
-    jpeg_set_quality(&cinfo, imageQuality, TRUE);
-	
-    jpeg_start_compress( &cinfo, TRUE );
-    
-    while( cinfo.next_scanline < cinfo.image_height )
-    {
-        row_pointer[0] = &buffer[ cinfo.next_scanline * cinfo.image_width *  cinfo.input_components];
-        jpeg_write_scanlines( &cinfo, row_pointer, 1 );
-    }
-	
-    jpeg_finish_compress( &cinfo );
-	jpeg_destroy_compress( &cinfo );
-   
-	
-	int nSent = 0;
-	
-	printf("Send size: %lu \n", mem_size); 
-	if((nSent = sendto(frameServerSocket, mem, mem_size, 0, (struct sockaddr*)&frameServerAddr, sizeof(frameServerAddr))) != mem_size)
-	{
-		printf("Can't send\n");
-		printf("Outputsize: %ld Sent: %d\n", mem_size, nSent);
-		sendFailCounter++;
-	}
-	else
-	{
-		printf("Sent: %d \n", nSent);
-		//printf("Sent to: %s \n", inet_ntoa(frameServerAddr.sin_addr));
-		sendFailCounter = 0;
-	}
-	
-	delete[] mem;
-}
-
-//Send msg to client
-void sendToClient(int clientSocket, const char* msg){
-	int msgLen = strlen(msg);
-	char buffer[32];
-	int n;
-	sprintf(buffer, "%d\n", 1);
-	
-	printf("Msglen: %d \n", msgLen);
-	if( (n = write(clientSocket, msg, msgLen)) < 0)
-		printf("Error sending message \n");
-}
-
-
 //Parse incoming messages
 int parseMessage(char buf[], int size){
 	uint8_t servo;
@@ -358,8 +290,8 @@ int main()
 	//pthread_t t1;
 	
 	LcdThread* lcd = new LcdThread();
-	AdcThread* adc = new AdcThread(lcd);
 	SendThread* sendThread = new SendThread();
+	AdcThread* adc = new AdcThread(lcd, sendThread);
 	
 	if(!bcm2835_init()){
 		printf("BCM error \n");
