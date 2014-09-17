@@ -18,8 +18,11 @@ namespace RCClient
         private int BUFFER_SIZE = 64*64*4;
 
         private UdpClient udpClient;
+        private Socket tcpClient;
+        private TcpListener listener;
         IPEndPoint groupEP;
         private IPEndPoint localEndPoint;
+        private bool isUdp;
 
         private static ManualResetEvent readDone = new ManualResetEvent(false);
 
@@ -105,11 +108,23 @@ namespace RCClient
         //opens UDP connection at port
         public void udpConnect(int port)
         {
-
+            isUdp = true;
             udpClient = new UdpClient(port);
             udpClient.Client.ReceiveTimeout = 1000;
             udpClient.Client.ReceiveBufferSize = 310000;
             groupEP = new IPEndPoint(IPAddress.Any, port);
+        }
+
+        public void tcpListen(String ip, int port)
+        {
+            isUdp = false;
+            selectCorrectLocal(ip);
+            listener = new TcpListener(localEndPoint.Address, port);
+            
+            listener.Start();
+
+            tcpClient = listener.AcceptSocket();
+            tcpClient.ReceiveBufferSize = 1000000;
         }
 
         public void bruteConnect(String ip, int port)
@@ -182,23 +197,25 @@ namespace RCClient
         //read a frame of size texW*texH*Channels
         public byte[] readFrame()
         {
-            byte[] rec = new byte[BUFFER_SIZE];
-            byte[] send = null;
-            try
-            {
-                int len = stream.Read(rec, 0, BUFFER_SIZE);
-                send = new byte[len];
-                Array.Copy(rec, send, len);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-            }
+            if (isUdp)
+                return readFrameUDP();
 
-            return send;
+            return readFrameTCP();
         }
 
-        public byte[] readFrameUDP()
+        private byte[] readFrameTCP()
+        {
+            byte[] rec = new byte[10000000];
+            int size = tcpClient.Receive(rec);
+
+            byte[] ret = new byte[size];
+
+            Array.Copy(rec, ret, size);
+
+            return ret;
+        }
+
+        private byte[] readFrameUDP()
         {
             byte[] rec = null;
             try
@@ -212,9 +229,14 @@ namespace RCClient
             return rec;
         }
 
-        public void udpDisconnect()
+        public void disconnect()
         {
-            udpClient.Close();
+            if (isUdp)
+                udpClient.Close();
+            else if(listener != null)
+                listener.Stop();
+
+            client.Close();
         }
 
         public bool isConnected()
@@ -222,9 +244,5 @@ namespace RCClient
             return client.Connected;
         }
 
-        public void disconnect()
-        {
-            client.Close();
-        }
     }
 }

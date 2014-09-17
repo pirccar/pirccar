@@ -16,17 +16,19 @@ namespace RCClient
         byte[] data;
         private int BUFFER_SIZE = 64*64*4;
         bool dataReady;
-        bool run = true;
-        bool connected = false;
+        volatile bool run = true;
+        volatile bool connected = false;
         int width;
         int height;
+        bool isUdp;
         String ip;
 
-        public ReadThread(String ip, int width, int height)
+        public ReadThread(String ip, int width, int height, bool isUdp = true)
         {
             this.ip = ip;
             this.width = width;
             this.height = height;
+            this.isUdp = isUdp;
             BUFFER_SIZE = width * height * 4;
         }
 
@@ -35,29 +37,33 @@ namespace RCClient
             //create buffer and connection
             data = new byte[BUFFER_SIZE];
             connection = new Socket_Connection(width, height);
-            while (run)
+
+            do
             {
                 //connect
                 //connection.connect(ip, 8002);
-                connection.udpConnect(8002);
+                if (isUdp)
+                    connection.udpConnect(8002);
+                else
+                    connection.tcpListen(ip, 8002);
                 connected = true;
 
                 //while (connection.isConnected() && connected)
-                while(connected)
+                while (connected)
                 {
                     //mutex
                     if (!dataReady)
                     {
                         //data = connection.readFrame();
-                        data = connection.readFrameUDP();
-                        if(data != null)
+                        data = connection.readFrame();
+                        if (data != null)
                             dataReady = true;
                     }
                 }
 
-            }
+            } while (run);
 
-            connection.udpDisconnect();
+            connection.disconnect();
         }
 
         //stop the connection

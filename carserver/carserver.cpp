@@ -433,10 +433,6 @@ int main()
 			alarm(recTime);
 			if( (recMsgSize = recv(clientSocket, buffer, 255, 0)) < 0){
 				printf("Recv failed \n"); //Indicates that it took more than 1 second to get a message from the client, bad connection
-				//connected = false;
-				//globalConnected = false;
-				//senderStarted = false;
-				//clientSocket = -1;
 				stopPWM();
 				alarm(0);
 				recTime = 10; //Increase recv timer to 10 seconds
@@ -450,7 +446,8 @@ int main()
 				connected = false;
 				globalConnected = false;
 				lcd->setConnected(globalConnected);
-				senderStarted = false;
+				sendThread->setHalted(true);
+				senderStarted = true;
 				//clientSocket = -1;
 				stopPWM();
 				alarm(0);
@@ -459,7 +456,8 @@ int main()
 			else{
 				alarm(0);
 				parseMessage(buffer, recMsgSize);
-
+				
+				sendThread->setImageQuality(imageQuality);
 				recvCounter = 0;
 				if(stabilized)
 				{
@@ -481,9 +479,19 @@ int main()
 						sendThread->setWidth(imageWidth);
 						sendThread->setHeight(imageHeight);
 						sendThread->setImageQuality(imageQuality);
+						printf("t1\n");
 						sendThread->start();
 						
 						senderStarted = true;
+					}
+					else
+					{
+						std::string s(frameIP);
+						sendThread->setTargetIP(s);
+						sendThread->setWidth(imageWidth);
+						sendThread->setHeight(imageHeight);
+						sendThread->setImageQuality(imageQuality);
+						sendThread->setHalted(false);
 					}
 					gotConfig = false;
 					lcd->setGotConfig(true);

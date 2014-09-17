@@ -24,6 +24,7 @@ public:
 	void setStabilized(bool stabilized);
 	bool getStabilized();
 	int getSendfailcounter();
+	void setHalted(bool halted);
 	
 private:
 	Socket socket;
@@ -40,6 +41,7 @@ private:
 	int gpsComport; //usb = 16 uart = 22
 	int gpsBaud; //usb = 4800, uart = 9600
 	bool stabilized;
+	bool halted;
 	long int start_time;
 	struct timespec now;
 	bool prev_stab_state;

@@ -13,6 +13,7 @@ void* Thread::threadMain(void* self)
 
 void Thread::start(void)
 {
+	isRunning = true;
 	pthread_create(&thread, NULL, threadMain, this);
 }
 

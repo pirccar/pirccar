@@ -42,6 +42,7 @@
 	{
 		cam.release();
 		delete[] buffer;
+		buffer = NULL;
 	}
 	
 	void Camera::setFormat(raspicam::RASPICAM_FORMAT format)
