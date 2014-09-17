@@ -8,18 +8,21 @@ Socket::Socket(void)
 	remoteSocket=0;
 }
 
-Socket::Socket(bool isUdp, int port)
+Socket::Socket(bool isUdp,bool outgoing, int port)
 {
 	this->isUdp = isUdp;
+	this->outgoing = outgoing;
 	this->port = port;
 	localSocket=0;
 	remoteSocket=0;
+	readBuffer = new char[1024];
 }
 
 Socket::~Socket(void)
  {
 	close(localSocket);
 	close(remoteSocket);
+	delete[] readBuffer;
  }
  
  void Socket::resolveHostname(std::string to)
@@ -48,6 +51,9 @@ Socket::~Socket(void)
  
  void Socket::initialize()
  {
+	if(outgoing)
+		return;
+	
 	if(isUdp)
 	{
 		if((localSocket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
@@ -89,10 +95,13 @@ Socket::~Socket(void)
 	
 int Socket::connect(std::string to)
 {	
+	if(!outgoing)
+		return 0;
+		
 	int ret = 0;
 	if(isUdp)
 	{
-		remoteSocket = socket(AF_INET, SOCK_DGRAM, 0);
+		remoteSocket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 		if(remoteSocket != 0)
 		{
 			printf("failed to create socket %d\n", remoteSocket);
@@ -167,18 +176,35 @@ int Socket::write(const char* msg)
 	}
 	return n;
 }
-char* Socket::read()
+
+int Socket::write(unsigned char* msg, int size)
 {
-	char buffer[1024];
+	int n = 0;
 	if(isUdp)
 	{
-		if(recvfrom(remoteSocket, buffer, sizeof(buffer), 0, NULL, NULL) < 0)
+		if((n = sendto(remoteSocket, msg, size, 0, (struct sockaddr*)&remoteAddr, sizeof(remoteAddr))) != size)
+			printf("Error sending UDP\n");
+	}
+	else
+	{
+		printf("Msglen: %d \n", size);
+		if( (n = send(remoteSocket, msg, size, 0)) < 0)
+			printf("Error sending TCP\n");
+	}
+	return n;
+}
+
+char* Socket::read()
+{
+	if(isUdp)
+	{
+		if(recvfrom(remoteSocket, readBuffer, sizeof(char) * 1024, 0, NULL, NULL) < 0)
 			printf("recvfrom failed\n");
 	}
 	else
 	{
-		if(recv(remoteSocket, buffer, sizeof(buffer), 0) < 0)
+		if(recv(remoteSocket, readBuffer, sizeof(char) * 1024, 0) < 0)
 			printf("recv failed\n");
 	}
-	return buffer;
+	return readBuffer;
 }

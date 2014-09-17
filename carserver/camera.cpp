@@ -37,6 +37,13 @@
 		
 		allocateBuffer();
 	}
+	
+	void Camera::close()
+	{
+		cam.release();
+		delete[] buffer;
+	}
+	
 	void Camera::setFormat(raspicam::RASPICAM_FORMAT format)
 	{
 		this->format = format;
@@ -55,7 +62,7 @@
 	unsigned char* Camera::getBuffer()
 	{
 		cam.grab(); //grabs a frame
-		cam.retrieve(buffer, raspicam::RASPICAM_FORMAT_IGNORE); //get the frame and place the data in "buffer"
+		cam.retrieve(buffer); //get the frame and place the data in "buffer"
 		
 		return buffer;
 	}

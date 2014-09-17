@@ -18,12 +18,14 @@ class Socket
 	struct sockaddr_in remoteAddr; //remote address
 	unsigned short port; //the port
 	bool isUdp; //is this socket using udp?
+	bool outgoing; //is this socket sending?
+	char* readBuffer;
 	
 	void resolveHostname(std::string to);
 	
 	public:
 	Socket(void); //default constructor
-	Socket(bool isUdp, int port); //choose if this socket should use udp and specify a port
+	Socket(bool isUdp, bool outgoing, int port); //choose if this socket should use udp and specify a port
 	~Socket(void); //destructor 
 	
 	void initialize(); //initialize local sockets
@@ -32,5 +34,6 @@ class Socket
 	void disconnect(); //disconnect the socket
 	
 	int write(const char* msg); //Sends a string and return number of chars sent
+	int write(unsigned char* msg, int size);
 	char* read(); //reads a string from a remote socket
 };

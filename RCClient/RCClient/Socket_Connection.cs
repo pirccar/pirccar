@@ -45,12 +45,7 @@ namespace RCClient
             {
                 if (adresses[i].AddressFamily == AddressFamily.InterNetwork)
                 {
-                    if (ip.Contains("25.") && adresses[i].ToString().Contains("25."))
-                    {
-                        local = adresses[i];
-                        break;
-                    }
-                    else if (!ip.Contains("25.") && !adresses[i].ToString().Contains("25."))
+                    if (ip.Contains(adresses[i].ToString().Substring(0, 3)) )
                     {
                         local = adresses[i];
                         break;

@@ -21,6 +21,7 @@
 #include "lcdscreen.h"
 #include "adcthread.h"
 #include "lcdthread.h"
+#include "sendthread.h"
 #include <jpeglib.h>
 
 #include "pca9685.h"
@@ -64,9 +65,6 @@ std::string chann1String;
 std::string chann2String;
 std::string chann3String;
 
-int gpsComport = 22; //usb = 16 uart = 22
-int gpsBaud = 9600; //usb = 4800, uart = 9600
-
 
 // pin setup
 int _din = 4;
@@ -78,8 +76,6 @@ int _cs = 2;
 //Compresses and image and sends it to a client
 void compressAndSend(unsigned char buffer[],int frameServerSocket, struct sockaddr_in frameServerAddr)
 {
-	int count = 0;
-	
 	unsigned char* mem = NULL;
 	unsigned long mem_size = 0;
 	struct jpeg_compress_struct cinfo;
@@ -316,256 +312,6 @@ void setup_alarm_handler() {
 	return str;
 }*/
 
-//Sendthread UDP
-void *sendThreadUDP(void *ptr)
-{
-	//For rendering camra on PI
-	/*InitGraphics();
-	GfxTexture texture;
-	texture.CreateRGBA(MAIN_TEXTURE_WIDTH, MAIN_TEXTURE_HEIGHT);
-	texture.GenerateFrameBuffer();
-	*/
-	
-	//The camera
-	//StopCamera();
-	Camera cam;
-	
-	cam.setWidthHeight(imageWidth, imageHeight);
-	cam.initialize();
-	
-	std::string serial_command_buf;
-	int serial_command_len = 0;
-	
-	//UDP Socket
-	int frameServerSocket;
-	struct sockaddr_in frameServerAddr;
-	unsigned short frameServerPort;
-	//char frameIP[] = "172.26.101.205";
-	
-	frameServerPort = 8002;
-	
-	uint8_t run = 1;
-	uint8_t connected = 0;
-	
-	if((frameServerSocket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
-		printf("Socket fail \n");
-	
-	
-	memset(&frameServerAddr, 0, sizeof(frameServerAddr));
-	frameServerAddr.sin_family = AF_INET;
-	frameServerAddr.sin_addr.s_addr = inet_addr(frameIP);
-	frameServerAddr.sin_port = htons(frameServerPort);
-	
-	//SPI for battery values
-	printf("Starting SPI \n");
-	bcm2835_spi_begin();
-	bcm2835_spi_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST);
-	bcm2835_spi_setDataMode(BCM2835_SPI_MODE0);
-	bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_65536);
-	bcm2835_spi_chipSelect(BCM2835_SPI_CS0);
-	bcm2835_spi_setChipSelectPolarity(BCM2835_SPI_CS0, LOW);
-	printf("SPI Init done \n");
-	stabilized = false;
-	long int start_time;
-	struct timespec now;
-	bool prev_stab_state = false;
-	
-	int batCount = 0;
-	int stableCount = 0;
-	int gearCount = 0;
-	
-	printf("Init comport \n");
-	if(RS232_OpenComport(gpsComport, gpsBaud)) //GPS 16 usb 4800, 22 uart 9600
-	{
-		printf("Couldn't open comport \n");
-	}
-	printf("Comport init done! \n");
-	clock_gettime(CLOCK_REALTIME, &now);
-	start_time = now.tv_sec;
-	
-	while(globalConnected)
-	{
-		//Send texture			
-		int n = 0;
-		unsigned char* imageBuffer = NULL;
-		printf("Trying to read camera \n");
-		imageBuffer = cam.getBuffer();
-		if(imageBuffer != NULL) //read an image from the camera
-		{
-			compressAndSend(imageBuffer, frameServerSocket, frameServerAddr);
-			printf("Exiting compress and send \n");
-			batCount++;
-			stableCount++;
-			gearCount++;
-		}
-		else
-		{
-			usleep(50000);
-			continue;
-		}
-		
-		printf("Before prevstab\n");
-		//Unstable / stable connection
-		if(prev_stab_state && !stabilized)
-		{
-			clock_gettime(CLOCK_REALTIME, &now);
-			start_time = now.tv_sec;
-			
-			printf("connection unstable \n");
-		}
-		
-		printf("Before stabilized\n");
-		if(!stabilized)
-		{
-			clock_gettime(CLOCK_REALTIME, &now);
-			if(now.tv_sec - start_time > 5)
-			{
-				stabilized = true;
-				
-				printf("connection stablilized \n");
-			}
-		}
-		
-		
-		//let the client know about the connection status
-		if(stableCount >= 24)
-		{
-			printf("Ready unready\n");
-			if(stabilized)
-			{
-				if(sendto(frameServerSocket, "ready", 5, 0, (struct sockaddr*)&frameServerAddr, sizeof(frameServerAddr)) != 5)
-				{
-					printf("Failed to send stabilized message \n");
-				}
-			}
-			else
-			{
-				if(sendto(frameServerSocket, "unready", 7, 0, (struct sockaddr*)&frameServerAddr, sizeof(frameServerAddr)) != 7)
-				{
-					printf("Failed to send unstable message \n");
-				}
-			}
-			stableCount = 0;
-		}
-		
-		
-		//Send battery info
-		if(batCount >= 12)
-		{
-			printf("Sending battery info \n");
-			std::string sendStr = chann0String+ ":" + chann1String + ":" + chann2String + ":" + chann3String;;
-			//sendStr += 
-			const char* send = sendStr.c_str();
-			//printf("Sending: %s \n", send);
-			if(sendto(frameServerSocket, send, sendStr.length(), 0, (struct sockaddr*)&frameServerAddr, sizeof(frameServerAddr)) != sendStr.length())
-			{
-				connected = false;
-				printf("UDP disconnected\n");
-			}
-			
-			batCount = 0;
-		}
-		else if(gearCount >= 32) //send gear info
-		{
-			printf("Before gear\n");
-			int gearValue = getPWMOff(gearChannel);
-			if(gearValue < 470)
-			{
-				if(sendto(frameServerSocket, "G0", 2, 0, (struct sockaddr*)&frameServerAddr, sizeof(frameServerAddr)) != 2)
-				{
-					printf("Failed to send gear message message \n");
-				}
-			}
-			else
-			{
-				if(sendto(frameServerSocket, "G1", 2, 0, (struct sockaddr*)&frameServerAddr, sizeof(frameServerAddr)) != 2)
-				{
-					printf("Failed to send gear message message \n");
-				}
-			}
-			gearCount = 0;
-		}
-		prev_stab_state = stabilized;
-		unsigned char serial_buf[256];
-		
-		
-		//read serialport (GPS)
-		printf("GPS time \n");
-		int ser_read = RS232_PollComport(gpsComport, serial_buf, 256);
-		printf("GPS Read done \n");
-		if(ser_read > 0) //found data
-		{
-			printf("GPS found data \n");
-			serial_buf[ser_read] = 0;
-			std::string sub_command((char*)serial_buf);
-			std::string comp("\n");
-			std::size_t found = sub_command.find(comp);
-			if(found != std::string::npos) //if current buf contains \n (end of GPS command)
-			{
-				char save_buf[256];
-				int save_len = 0;
-				
-				//check if \n is the last char
-				if(found != sub_command.length()-1)
-				{
-					//if \n wasn't the last char read then there is data from a new command after the \n command, save those chars and parse later
-					std::size_t length = sub_command.copy(save_buf, sub_command.length() - found -1, found+1);
-					save_buf[length] = '\0';
-					sub_command[found+1] = '\0';
-					save_len = length;
-				}
-				
-			
-				if(serial_command_len == 0) //whole command found in one read
-				{
-					serial_command_buf = sub_command.substr(0, found+1);
-				}
-				else //Command found, composed of old read
-				{
-					serial_command_buf += sub_command.substr(0, found+1);
-				}
-				
-				//of the command is of type RMC, then send it to the client 
-				comp = "GPRMC";
-				found = serial_command_buf.find(comp);
-				if(found != std::string::npos)
-				{
-					//send to client
-					char const* send = serial_command_buf.c_str();
-					if(sendto(frameServerSocket, send, serial_command_buf.length(), 0, (struct sockaddr*)&frameServerAddr, sizeof(frameServerAddr)) != serial_command_buf.length())
-					{
-						printf("UDP disconnected\n");
-					}
-				}
-				serial_command_len = save_len;
-				serial_command_buf = save_buf;
-			}
-			else // no \n save untill \n is found
-			{
-				if(serial_command_len == 0)
-				{
-					serial_command_buf = sub_command;
-				}
-				else
-				{
-					serial_command_buf += sub_command;
-				}
-				serial_command_len += ser_read;
-			}
-		}
-	}
-	
-	printf("Closing com \n");
-	RS232_CloseComport(gpsComport);
-	
-	printf("stopping camera\n");
-	//StopCamera();
-	
-	printf("closing socket\n");
-	close(frameServerSocket);
-	
-}
-
 //Stop all PWM channels
 void stopPWM()
 {
@@ -609,10 +355,11 @@ int main()
 	bool connected = false;
 	bool senderStarted = false;
 	
-	pthread_t t1;
+	//pthread_t t1;
 	
 	LcdThread* lcd = new LcdThread();
 	AdcThread* adc = new AdcThread(lcd);
+	SendThread* sendThread = new SendThread();
 	
 	if(!bcm2835_init()){
 		printf("BCM error \n");
@@ -711,10 +458,8 @@ int main()
 			}
 			else{
 				alarm(0);
-				if(parseMessage(buffer, recMsgSize)){
-				
-					
-				}
+				parseMessage(buffer, recMsgSize);
+
 				recvCounter = 0;
 				if(stabilized)
 				{
@@ -730,7 +475,14 @@ int main()
 					if(!senderStarted)
 					{
 						printf("Starting UDP thread\n");
-						pthread_create(&t1, NULL, sendThreadUDP, NULL);
+						//pthread_create(&t1, NULL, sendThreadUDP, NULL);
+						std::string s(frameIP);
+						sendThread->setTargetIP(s);
+						sendThread->setWidth(imageWidth);
+						sendThread->setHeight(imageHeight);
+						sendThread->setImageQuality(imageQuality);
+						sendThread->start();
+						
 						senderStarted = true;
 					}
 					gotConfig = false;
@@ -739,7 +491,7 @@ int main()
 				}
 			}
 			
-			
+			sendFailCounter = sendThread->getSendfailcounter();
 			if(sendFailCounter >= 150 || recvCounter >= 15)
 			{
 				connected = false;
@@ -767,14 +519,16 @@ int main()
 		ready = false;
 	}
 	stopPWM();
-	pthread_join(t1, NULL);
+	//pthread_join(t1, NULL);
 	lcd->stop();
 	adc->stop();
+	sendThread->stop();
 	//pthread_join(lcd_thread, NULL);
 	printf("Shutting down \n");
 	delete[] frameIP;
 	delete lcd;
 	delete adc;
+	delete sendThread;
 	bcm2835_close();
 		
 	return 0;

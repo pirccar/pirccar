@@ -1,3 +1,4 @@
+#pragma once
 #include <raspicam/raspicam.h>
 
 class Camera
@@ -15,6 +16,7 @@ class Camera
 	~Camera(void);
 	
 	void initialize(); //intializes the camera with size and format, also opens the camera and makes it ready to capture
+	void close(); //stops the camera and release all resources
 	void setFormat(raspicam::RASPICAM_FORMAT format); //sets the format, should be called before initialize
 	void setWidthHeight(int width, int height); //sets width and height, should be called before initialize. TODO: split into separate functions
 	

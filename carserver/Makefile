@@ -303,6 +303,54 @@ rs232.c.s:
 	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/rs232.c.s
 .PHONY : rs232.c.s
 
+sendthread.o: sendthread.cpp.o
+.PHONY : sendthread.o
+
+# target to build an object file
+sendthread.cpp.o:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/sendthread.cpp.o
+.PHONY : sendthread.cpp.o
+
+sendthread.i: sendthread.cpp.i
+.PHONY : sendthread.i
+
+# target to preprocess a source file
+sendthread.cpp.i:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/sendthread.cpp.i
+.PHONY : sendthread.cpp.i
+
+sendthread.s: sendthread.cpp.s
+.PHONY : sendthread.s
+
+# target to generate assembly for a file
+sendthread.cpp.s:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/sendthread.cpp.s
+.PHONY : sendthread.cpp.s
+
+socket.o: socket.cpp.o
+.PHONY : socket.o
+
+# target to build an object file
+socket.cpp.o:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/socket.cpp.o
+.PHONY : socket.cpp.o
+
+socket.i: socket.cpp.i
+.PHONY : socket.i
+
+# target to preprocess a source file
+socket.cpp.i:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/socket.cpp.i
+.PHONY : socket.cpp.i
+
+socket.s: socket.cpp.s
+.PHONY : socket.s
+
+# target to generate assembly for a file
+socket.cpp.s:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/socket.cpp.s
+.PHONY : socket.cpp.s
+
 thread.o: thread.cpp.o
 .PHONY : thread.o
 
@@ -360,6 +408,12 @@ help:
 	@echo "... rs232.o"
 	@echo "... rs232.i"
 	@echo "... rs232.s"
+	@echo "... sendthread.o"
+	@echo "... sendthread.i"
+	@echo "... sendthread.s"
+	@echo "... socket.o"
+	@echo "... socket.i"
+	@echo "... socket.s"
 	@echo "... thread.o"
 	@echo "... thread.i"
 	@echo "... thread.s"
