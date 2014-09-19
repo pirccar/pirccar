@@ -1,4 +1,4 @@
---------raspicam------------
+--------raspicam------------ (Används inte längre!)
 
 1. ladda ner https://sourceforge.net/projects/raspicam/files/?
 2. flytta över filerna till pi'en
@@ -36,3 +36,13 @@ sudo apt-get install libjpeg-dev
 	tar xfz wiringPi-xxxxxx.tar.gz
 	cd wiringPi-xxxxxx
 	./build
+
+-------Userland------------- (behövs för nya kamera api
+1. Flytta över zipfilen ifrån mappen API till pi'en.
+2. Lägg .zip filen i /opt/vc/ och packa upp, du ska nu få en mapp som heter "userland-master"
+3. cd userland-master
+4. sudo mkdir build
+5. cd build
+6. sudo cmake -DCMAKE_BUILDTYPE=Release ..
+7. sudo make (tar ca 1h)
+8. sudo make install
