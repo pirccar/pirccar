@@ -39,8 +39,11 @@ namespace RCClient
             Byte[] output;
             try
             {
+                
+
                 using (Image image = Image.FromStream(new MemoryStream(arr)))
                 {
+                    image.Save("output.jpeg", ImageFormat.Jpeg);
                     /* OLD AND SLOW
                      * Bitmap bitmap = new Bitmap(image);
                     output = new Byte[bitmap.Width * bitmap.Height * 4];
@@ -116,6 +119,8 @@ namespace RCClient
             {
                 using (Image image = Image.FromStream(new MemoryStream(arr)))
                 {
+                    
+
                     unsafe
                     {
                         Bitmap bitmap = new Bitmap(image);

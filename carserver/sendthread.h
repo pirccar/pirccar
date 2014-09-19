@@ -7,7 +7,7 @@
 #include <jpeglib.h>
 
 
-#include "camera.h"
+#include "camerawrapper.h"
 #include "thread.h"
 #include "socket.h"
 #include "rs232.h"
@@ -17,6 +17,7 @@ class SendThread : public Thread
 public:
 	SendThread(void);
 	SendThread(std::string ip);
+	void setUdp(bool udp);
 	void setTargetIP(std::string ip);
 	void setWidth(int width);
 	void setHeight(int height);
@@ -29,7 +30,7 @@ public:
 	
 private:
 	Socket socket;
-	Camera cam;
+	CameraWrapper cam;
 	std::string ip;
 	std::string serial_command_buf;
 	std::string chann0String;
@@ -43,6 +44,7 @@ private:
 	int gpsBaud; //usb = 4800, uart = 9600
 	bool stabilized;
 	bool halted;
+	bool isUdp;
 	long int start_time;
 	struct timespec now;
 	bool prev_stab_state;

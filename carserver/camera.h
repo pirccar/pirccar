@@ -1,29 +1,68 @@
 #pragma once
-#include <raspicam/raspicam.h>
 
-class Camera
+#include "mmalincludes.h"
+#include "cameracontrol.h"
+
+class CCamera;
+
+class CCameraOutput
 {
-	private:
-	unsigned char* buffer; //internal buffer for image
-	int width, height; //size of image
-	raspicam::RaspiCam cam; //the raspicam camera
-	raspicam::RASPICAM_FORMAT format; //image format, RGB etc
-	
-	void allocateBuffer(); //allocates memory for the buffer
-	
-	public:
-	Camera(void);
-	~Camera(void);
-	
-	void initialize(); //intializes the camera with size and format, also opens the camera and makes it ready to capture
-	void close(); //stops the camera and release all resources
-	void setFormat(raspicam::RASPICAM_FORMAT format); //sets the format, should be called before initialize
-	void setWidthHeight(int width, int height); //sets width and height, should be called before initialize. TODO: split into separate functions
-	
-	unsigned int getWidth(); //get the width of the image
-	unsigned int getHeight(); //get the height of the image
-	
-	size_t getImageBufferSize(); //get the size of the image buffer
-	
-	unsigned char* getBuffer(); //get the buffer, this will force the camera to get a new frame, Warning not thread safe!
+public:
+	int						Width;
+	int						Height;
+	MMAL_COMPONENT_T*		ResizerComponent;
+	MMAL_CONNECTION_T*		Connection;
+	MMAL_BUFFER_HEADER_T*	LockedBuffer;
+	MMAL_POOL_T*			BufferPool;
+	MMAL_QUEUE_T*			OutputQueue;
+	MMAL_PORT_T*			BufferPort;
+
+	CCameraOutput();
+	~CCameraOutput();
+	bool Init(int width, int height, MMAL_COMPONENT_T* input_component, int input_port_idx, bool do_argb_conversion);
+	void Release();
+	void OnVideoBufferCallback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
+	static void VideoBufferCallback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
+	int ReadFrame(void* buffer, int buffer_size);
+	bool BeginReadFrame(const void* &out_buffer, int& out_buffer_size);
+	void EndReadFrame();
+	MMAL_POOL_T* EnablePortCallbackAndCreateBufferPool(MMAL_PORT_T* port, MMAL_PORT_BH_CB_T cb, int buffer_count);
+	MMAL_COMPONENT_T* CreateResizeComponentAndSetupPorts(MMAL_PORT_T* video_output_port, bool do_argb_conversion);
+
 };
+
+class CCamera
+{
+public:
+
+	int ReadFrame(int level, void* buffer, int buffer_size);
+	bool BeginReadFrame(int level, const void* &out_buffer, int& out_buffer_size);
+	void EndReadFrame(int level);
+
+private:
+	CCamera();
+	~CCamera();
+
+	bool Init(int width, int height, int framerate, int num_levels, bool do_argb_conversion);
+	void Release();
+	MMAL_COMPONENT_T* CreateCameraComponentAndSetupPorts();
+	MMAL_COMPONENT_T* CreateSplitterComponentAndSetupPorts(MMAL_PORT_T* video_ouput_port);
+
+	void OnCameraControlCallback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
+	static void CameraControlCallback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
+
+	int							Width;
+	int							Height;
+	int							FrameRate;
+	RASPICAM_CAMERA_PARAMETERS	CameraParameters;
+	MMAL_COMPONENT_T*			CameraComponent;    
+	MMAL_COMPONENT_T*			SplitterComponent;
+	MMAL_CONNECTION_T*			VidToSplitConn;
+	CCameraOutput*				Outputs[4];
+
+	friend CCamera* StartCamera(int width, int height, int framerate, int num_levels, bool do_argb_conversion);
+	friend void StopCamera();
+};
+
+CCamera* StartCamera(int width, int height, int framerate, int num_levels, bool do_argb_conversion=true);
+void StopCamera();

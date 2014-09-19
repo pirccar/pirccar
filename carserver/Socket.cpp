@@ -85,6 +85,8 @@ Socket::~Socket(void)
 			printf("localSocket opt error \n");
 		}
 		
+		
+		
 		if(bind(localSocket, (struct sockaddr *) &localAddr, sizeof(localAddr)) < 0)
 			printf("bind error \n");
 	
@@ -132,7 +134,16 @@ int Socket::connect(std::string to)
 		 
 		remoteAddr.sin_family = AF_INET;
 		remoteAddr.sin_port = htons( port );
-		 
+		
+		/*		
+		struct timeval timeout;
+		timeout.tv_sec = 5;
+		timeout.tv_usec = 0;
+		
+		if(setsockopt(remoteSocket, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout)) <0)
+			printf("error setting socket timeout\n");
+		*/
+		
 		//Connect to remote server
 		ret = ::connect(remoteSocket , (struct sockaddr *)&remoteAddr , sizeof(remoteAddr));
 		if (ret != 0)
@@ -156,7 +167,8 @@ void Socket::waitForConnection()
 }
 void Socket::disconnect()
  {
-	close(remoteSocket);
+	if(remoteSocket)
+		close(remoteSocket);
  }
 
 int Socket::write(const char* msg)
@@ -170,7 +182,7 @@ int Socket::write(const char* msg)
 	}
 	else
 	{
-		printf("Msglen: %d \n", msgLen);
+		//printf("Msglen: %d \n", msgLen);
 		if( (n = send(remoteSocket, msg, msgLen, 0)) < 0)
 			printf("Error sending TCP\n");
 	}
@@ -187,7 +199,7 @@ int Socket::write(unsigned char* msg, int size)
 	}
 	else
 	{
-		printf("Msglen: %d \n", size);
+		//printf("Msglen: %d \n", size);
 		if( (n = send(remoteSocket, msg, size, 0)) < 0)
 			printf("Error sending TCP\n");
 	}

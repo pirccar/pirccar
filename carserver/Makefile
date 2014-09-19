@@ -183,6 +183,54 @@ camera.cpp.s:
 	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/camera.cpp.s
 .PHONY : camera.cpp.s
 
+cameracontrol.o: cameracontrol.cpp.o
+.PHONY : cameracontrol.o
+
+# target to build an object file
+cameracontrol.cpp.o:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/cameracontrol.cpp.o
+.PHONY : cameracontrol.cpp.o
+
+cameracontrol.i: cameracontrol.cpp.i
+.PHONY : cameracontrol.i
+
+# target to preprocess a source file
+cameracontrol.cpp.i:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/cameracontrol.cpp.i
+.PHONY : cameracontrol.cpp.i
+
+cameracontrol.s: cameracontrol.cpp.s
+.PHONY : cameracontrol.s
+
+# target to generate assembly for a file
+cameracontrol.cpp.s:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/cameracontrol.cpp.s
+.PHONY : cameracontrol.cpp.s
+
+camerawrapper.o: camerawrapper.cpp.o
+.PHONY : camerawrapper.o
+
+# target to build an object file
+camerawrapper.cpp.o:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/camerawrapper.cpp.o
+.PHONY : camerawrapper.cpp.o
+
+camerawrapper.i: camerawrapper.cpp.i
+.PHONY : camerawrapper.i
+
+# target to preprocess a source file
+camerawrapper.cpp.i:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/camerawrapper.cpp.i
+.PHONY : camerawrapper.cpp.i
+
+camerawrapper.s: camerawrapper.cpp.s
+.PHONY : camerawrapper.s
+
+# target to generate assembly for a file
+camerawrapper.cpp.s:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/camerawrapper.cpp.s
+.PHONY : camerawrapper.cpp.s
+
 carserver.o: carserver.cpp.o
 .PHONY : carserver.o
 
@@ -393,6 +441,12 @@ help:
 	@echo "... camera.o"
 	@echo "... camera.i"
 	@echo "... camera.s"
+	@echo "... cameracontrol.o"
+	@echo "... cameracontrol.i"
+	@echo "... cameracontrol.s"
+	@echo "... camerawrapper.o"
+	@echo "... camerawrapper.i"
+	@echo "... camerawrapper.s"
 	@echo "... carserver.o"
 	@echo "... carserver.i"
 	@echo "... carserver.s"

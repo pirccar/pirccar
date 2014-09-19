@@ -32,7 +32,7 @@ namespace RCClient
         SpriteFont font;
         KeyboardState prevState;
         GamePadState prevPadState;
-
+        
         //Map
         bool useBrowser = false;
         Forms.WebBrowser browser;
@@ -48,8 +48,8 @@ namespace RCClient
         //Resolutions
         int screen_width = 1600;
         int screen_height = 768;
-        int fpv_texture_width = 128;
-        int fpv_texture_height = 128;
+        int fpv_texture_width = 512;
+        int fpv_texture_height = 512;
         int imageQuality = 100;
         int map_width = 256;
         int map_height = 256;
@@ -151,12 +151,12 @@ namespace RCClient
 
             //Init
             connection = new Socket_Connection(fpv_texture_width, fpv_texture_height);
-            readThread = new ReadThread(ip, fpv_texture_width, fpv_texture_height);
+            readThread = new ReadThread(ip, fpv_texture_width, fpv_texture_height, false);
             thread = new Thread(new ThreadStart(readThread.Run));
 
             servos = new Servo[16];
             prevServos = new Servo[16];
-            camera = new Texture2D(graphics.GraphicsDevice, fpv_texture_width, fpv_texture_height);
+            camera = new Texture2D(graphics.GraphicsDevice, fpv_texture_width, fpv_texture_height, false, SurfaceFormat.Color);
             decompressor = new Decompressor();
             lxmean = new float[lxmeansize];
 
@@ -313,7 +313,8 @@ namespace RCClient
             String width = String.Format("{0:0000}", fpv_texture_width);
             String height = String.Format("{0:0000}", fpv_texture_height);
             String quality = String.Format("{0:000}", imageQuality);
-            String send = "C" + throttleF + throttleB + gear + width + height + quality;
+            String udp = String.Format("{0:0}", fpv_texture_width > 128 ? 0 : 1);
+            String send = "C" + throttleF + throttleB + gear + width + height + quality + udp;
             connection.send(send);
         }
 
@@ -439,7 +440,7 @@ namespace RCClient
                 }
                 else
                 {
-                    connection.send("P");
+                    connection.send("Pingeling");
                 }
             }
 
@@ -624,9 +625,9 @@ namespace RCClient
                 }
                 else //it is a frame
                 {
-
                     Byte[] decomp = decompressor.Decompress(data, true); //decompress the data
-
+                    //uint[] decomp = decompressor.Decompress(data, true);
+    
                     int width = decompressor.getWidth();
                     int height = decompressor.getHeight();
 
@@ -719,13 +720,15 @@ namespace RCClient
                 
                 if (useInputIp)
                     connection.connect(ipinput, 8001);
-
+                
                 if (!thread.IsAlive)
                 {
-                    readThread = new ReadThread(ip, fpv_texture_width, fpv_texture_height);
+                    readThread = new ReadThread(ip, fpv_texture_width, fpv_texture_height, fpv_texture_width > 128 ? false : true);
                     thread = new Thread(new ThreadStart(readThread.Run));
                     thread.Start();
                 }
+
+                sendConfig();
 
                 /*if (!streamThreadT.IsAlive)
                     streamThreadT.Start();*/

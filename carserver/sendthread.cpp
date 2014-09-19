@@ -12,6 +12,11 @@ SendThread::SendThread(std::string ip)
 	
 }
 
+void SendThread::setUdp(bool udp)
+{
+	this->isUdp = udp;
+}
+
 void SendThread::setTargetIP(std::string ip)
 {
 	this->ip = ip;
@@ -142,6 +147,19 @@ void SendThread::readGPS()
 
 void SendThread::compressAndSend(unsigned char imageBuffer[])
 {
+	unsigned char rgbBuffer[(imageWidth*imageHeight)*3];
+	int count = 0;
+	int bufferSize = imageWidth*imageHeight*4;
+	//convert from RGBA to RGB
+	for(int i = 0; i < bufferSize; i+=4)
+	{
+		rgbBuffer[count] = imageBuffer[i];
+		rgbBuffer[count+1] = imageBuffer[i+1];
+		rgbBuffer[count+2] = imageBuffer[i+2];
+			
+		count+=3;
+	}
+
 	unsigned char* mem = NULL;
 	unsigned long mem_size = 0;
 	struct jpeg_compress_struct cinfo;
@@ -167,7 +185,7 @@ void SendThread::compressAndSend(unsigned char imageBuffer[])
     
     while( cinfo.next_scanline < cinfo.image_height )
     {
-        row_pointer[0] = &imageBuffer[ cinfo.next_scanline * cinfo.image_width *  cinfo.input_components];
+        row_pointer[0] = &rgbBuffer[ cinfo.next_scanline * cinfo.image_width *  cinfo.input_components];
         jpeg_write_scanlines( &cinfo, row_pointer, 1 );
     }
 	
@@ -177,7 +195,7 @@ void SendThread::compressAndSend(unsigned char imageBuffer[])
 	
 	int nSent = 0;
 	
-	printf("Send size: %lu \n", mem_size); 
+	//printf("Send size: %lu \n", mem_size); 
 	if((nSent = socket.write(mem, mem_size)) != mem_size)
 	{
 		printf("Can't send\n");
@@ -186,7 +204,7 @@ void SendThread::compressAndSend(unsigned char imageBuffer[])
 	}
 	else
 	{
-		printf("Sent: %d \n", nSent);
+		//printf("Sent: %d \n", nSent);
 		//printf("Sent to: %s \n", inet_ntoa(frameServerAddr.sin_addr));
 		sendfailcounter = 0;
 	}
@@ -196,10 +214,12 @@ void SendThread::compressAndSend(unsigned char imageBuffer[])
 
 void SendThread::init(void)
 {
-	socket = Socket(false, true, 8002);
+	socket = Socket(isUdp, true, 8002);
 	socket.initialize();
 	socket.connect(ip);
 	
+	
+	cam = CameraWrapper();
 	cam.setWidthHeight(imageWidth, imageHeight);
 	cam.initialize();
 	

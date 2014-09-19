@@ -29,6 +29,7 @@ namespace RCClient
             this.width = width;
             this.height = height;
             this.isUdp = isUdp;
+
             BUFFER_SIZE = width * height * 4;
         }
 

@@ -17,7 +17,7 @@
 #include <netdb.h>
 #include <ifaddrs.h>
 
-#include "camera.h"
+#include "camerawrapper.h"
 #include "lcdscreen.h"
 #include "adcthread.h"
 #include "lcdthread.h"
@@ -54,6 +54,7 @@ int gearChannel = -1;
 sig_atomic_t alarm_counter;
 int recTime = 10;
 bool stabilized = false;
+bool udpSend = true;
 int sendFailCounter = 0;
 
 double chann0Double;
@@ -149,6 +150,10 @@ int parseMessage(char buf[], int size){
 		imageQuality = atoi(quality);
 		printf("Setting image quality to %d \n", imageQuality);
 		
+		if(buf[18] == '1')
+			udpSend = true;
+		else
+			udpSend = false;
 		
 		printf("Config was received \n");
 		gotConfig = true;
@@ -370,6 +375,7 @@ int main()
 				recTime = 10; //Increase recv timer to 10 seconds
 				stabilized = false;
 				recvCounter++;
+				printf("End of recv failed\n");
 				//break;
 			}
 			else if(recMsgSize == 0)
@@ -387,7 +393,9 @@ int main()
 			}
 			else{
 				alarm(0);
+				printf("before parse\n");
 				parseMessage(buffer, recMsgSize);
+				printf("after parse\n");
 				
 				sendThread->setImageQuality(imageQuality);
 				recvCounter = 0;
@@ -407,6 +415,7 @@ int main()
 						printf("Starting UDP thread\n");
 						//pthread_create(&t1, NULL, sendThreadUDP, NULL);
 						std::string s(frameIP);
+						sendThread->setUdp(udpSend);
 						sendThread->setTargetIP(s);
 						sendThread->setWidth(imageWidth);
 						sendThread->setHeight(imageHeight);
@@ -419,12 +428,14 @@ int main()
 					else
 					{
 						std::string s(frameIP);
+						sendThread->setUdp(udpSend);
 						sendThread->setTargetIP(s);
 						sendThread->setWidth(imageWidth);
 						sendThread->setHeight(imageHeight);
 						sendThread->setImageQuality(imageQuality);
 						sendThread->setHalted(false);
 					}
+					gotConfig = false;
 					gotConfig = false;
 					lcd->setGotConfig(true);
 					ready = true;
@@ -448,6 +459,7 @@ int main()
 				obstructed = true;
 				setPWM(throttleFChannel, 160); //stopping throttle channel
 				setPWM(throttleBChannel, 160); //stopping throttle channel
+				
 			}
 			else
 			{
