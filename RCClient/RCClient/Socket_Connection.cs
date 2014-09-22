@@ -207,7 +207,6 @@ namespace RCClient
         private byte[] readFrameTCP()
         {
             byte[] rec = new byte[10000000];
-            byte[] msgSize = new byte[5000];
             int size = 0;
             try
             {
@@ -242,8 +241,10 @@ namespace RCClient
         public void disconnect()
         {
             if (isUdp)
+            {
                 udpClient.Close();
-            else if(listener != null)
+            }
+            else if (listener != null)
                 listener.Stop();
 
             client.Close();

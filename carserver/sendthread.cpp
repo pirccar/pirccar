@@ -206,6 +206,7 @@ void SendThread::compressAndSend(unsigned char imageBuffer[])
 	{
 		//printf("Sent: %d \n", nSent);
 		//printf("Sent to: %s \n", inet_ntoa(frameServerAddr.sin_addr));
+		printf("Resetting sendfail, was: %d \n", sendfailcounter);
 		sendfailcounter = 0;
 	}
 	
@@ -238,6 +239,8 @@ void SendThread::init(void)
 	clock_gettime(CLOCK_REALTIME, &now);
 	start_time = now.tv_sec;
 	printf("t3\n");
+	
+	sleep(3);
 }
 
 void SendThread::mainLoop(void)
@@ -256,8 +259,12 @@ void SendThread::mainLoop(void)
 		}
 		else
 		{
-			usleep(50000);
-			return;
+			sendfailcounter++;
+			printf("internal sendfail: %d \n", sendfailcounter);
+			usleep(5000);
+			
+			//sleep(1);
+			//return;
 		}
 		
 		//Unstable / stable connection

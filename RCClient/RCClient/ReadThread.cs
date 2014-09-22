@@ -61,10 +61,11 @@ namespace RCClient
                             dataReady = true;
                     }
                 }
+                
 
             } while (run);
 
-            connection.disconnect();
+            
         }
 
         //stop the connection
@@ -72,7 +73,7 @@ namespace RCClient
         {
             /*if(connection.isConnected())
                 connection.disconnect();*/
-
+            connection.disconnect();
             connected = false;
             run = false;
         }

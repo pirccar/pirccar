@@ -87,8 +87,8 @@ int parseMessage(char buf[], int size){
 		
 		
 	if(buf[0] == 'P'){ // is ping
+		printf("Got a ping\n");
 		return 1;
-		
 	}
 	else if(buf[0] == 'C') //Is config
 	{
@@ -158,10 +158,10 @@ int parseMessage(char buf[], int size){
 		printf("Config was received \n");
 		gotConfig = true;
 	}
-	else if(ready){ //is command S010400= set servo 1 to 400 off
-		
+	else if(ready){ //is command S010400 = set servo 1 to 400 off
+		printf("Got servo data \n");
 		int i = 0;
-		while(i + 6 < size)
+		while(i + 7 < size)
 		{
 			if(buf[i] == 'S') // servo
 			{
@@ -235,19 +235,6 @@ void setup_alarm_handler() {
     if (sigaction(SIGALRM, &sa, 0) < 0)
         printf("Can't establish signal handler");
 }
-
-//Creates a string containing the value of the ADC channel, used for sending data to client
-/*std::string getADCString(int channel)
-{
-	double val = readADCValue(channel);
-	std::ostringstream os;
-	os << channel; //channel
-	os << val; //value
-	std::string marker = "V";
-	std::string str = marker + os.str();
-	
-	return str;
-}*/
 
 //Stop all PWM channels
 void stopPWM()
@@ -368,6 +355,8 @@ int main()
 			bzero(buffer, 256);
 			int recMsgSize;
 			alarm(recTime);
+			
+			printf("Reading message \n");
 			if( (recMsgSize = recv(clientSocket, buffer, 255, 0)) < 0){
 				printf("Recv failed \n"); //Indicates that it took more than 1 second to get a message from the client, bad connection
 				stopPWM();
@@ -392,11 +381,10 @@ int main()
 				break;
 			}
 			else{
+				printf("parsing message \n");
 				alarm(0);
-				printf("before parse\n");
 				parseMessage(buffer, recMsgSize);
-				printf("after parse\n");
-				
+				printf("After parsing \n");
 				sendThread->setImageQuality(imageQuality);
 				recvCounter = 0;
 				if(stabilized)
@@ -412,7 +400,7 @@ int main()
 				{
 					if(!senderStarted)
 					{
-						printf("Starting UDP thread\n");
+						printf("Starting sendThread\n");
 						//pthread_create(&t1, NULL, sendThreadUDP, NULL);
 						std::string s(frameIP);
 						sendThread->setUdp(udpSend);
@@ -420,13 +408,14 @@ int main()
 						sendThread->setWidth(imageWidth);
 						sendThread->setHeight(imageHeight);
 						sendThread->setImageQuality(imageQuality);
-						printf("t1\n");
+						
 						sendThread->start();
 						
 						senderStarted = true;
 					}
 					else
 					{
+						printf("initializing sendThread");
 						std::string s(frameIP);
 						sendThread->setUdp(udpSend);
 						sendThread->setTargetIP(s);
@@ -436,18 +425,21 @@ int main()
 						sendThread->setHalted(false);
 					}
 					gotConfig = false;
-					gotConfig = false;
 					lcd->setGotConfig(true);
 					ready = true;
 				}
 			}
 			
 			sendFailCounter = sendThread->getSendfailcounter();
+			
+			printf("Send fails: %d \n", sendFailCounter);
 			if(sendFailCounter >= 150 || recvCounter >= 15)
 			{
+				printf("Send failed triggered \n");
 				connected = false;
 				globalConnected = false;
 				senderStarted = false;
+				sendThread->stop();
 				clientSocket = -1;
 				stopPWM();
 			}

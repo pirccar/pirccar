@@ -48,8 +48,8 @@ namespace RCClient
         //Resolutions
         int screen_width = 1600;
         int screen_height = 768;
-        int fpv_texture_width = 512;
-        int fpv_texture_height = 512;
+        int fpv_texture_width = 128;
+        int fpv_texture_height = 128;
         int imageQuality = 100;
         int map_width = 256;
         int map_height = 256;
@@ -440,7 +440,7 @@ namespace RCClient
                 }
                 else
                 {
-                    connection.send("Pingeling");
+                    connection.send("P");
                 }
             }
 
@@ -717,16 +717,26 @@ namespace RCClient
 
                 parseConfigBoxes();
                 ip = ipinput;
-                
-                if (useInputIp)
-                    connection.connect(ipinput, 8001);
-                
+
                 if (!thread.IsAlive)
                 {
                     readThread = new ReadThread(ip, fpv_texture_width, fpv_texture_height, fpv_texture_width > 128 ? false : true);
                     thread = new Thread(new ThreadStart(readThread.Run));
                     thread.Start();
                 }
+                else if (!connection.isConnected())
+                {
+                    readThread.kill();
+                    thread.Join(500);
+                    readThread = new ReadThread(ip, fpv_texture_width, fpv_texture_height, fpv_texture_width > 128 ? false : true);
+                    thread = new Thread(new ThreadStart(readThread.Run));
+                    thread.Start();
+                }
+                
+                if (useInputIp)
+                    connection.connect(ipinput, 8001);
+
+               
 
                 sendConfig();
 
@@ -746,6 +756,8 @@ namespace RCClient
                 }
                 if (connection.isConnected())
                     connection.disconnect();
+
+                stabilized = false;
 
                 SaveConfig();
             }
@@ -889,6 +901,9 @@ namespace RCClient
             {
                 sendConfig();
             }
+
+            if (state.IsKeyDown(Keys.W) && prevState.IsKeyUp(Keys.W))
+                sendConfig();
 
             //Reset view
             if (GamePad.GetState(PlayerIndex.One).Buttons.B == ButtonState.Pressed)
