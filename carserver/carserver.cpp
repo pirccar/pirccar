@@ -87,7 +87,7 @@ int parseMessage(char buf[], int size){
 		
 		
 	if(buf[0] == 'P'){ // is ping
-		printf("Got a ping\n");
+		//printf("Got a ping\n");
 		return 1;
 	}
 	else if(buf[0] == 'C') //Is config
@@ -151,9 +151,15 @@ int parseMessage(char buf[], int size){
 		printf("Setting image quality to %d \n", imageQuality);
 		
 		if(buf[18] == '1')
+		{
 			udpSend = true;
+			printf("Setting to UDP \n");
+		}
 		else
+		{
 			udpSend = false;
+			printf("Setting to TCP \n");
+		}
 		
 		printf("Config was received \n");
 		gotConfig = true;
@@ -356,7 +362,7 @@ int main()
 			int recMsgSize;
 			alarm(recTime);
 			
-			printf("Reading message \n");
+			//printf("Reading message \n");
 			if( (recMsgSize = recv(clientSocket, buffer, 255, 0)) < 0){
 				printf("Recv failed \n"); //Indicates that it took more than 1 second to get a message from the client, bad connection
 				stopPWM();
@@ -381,10 +387,10 @@ int main()
 				break;
 			}
 			else{
-				printf("parsing message \n");
+				//printf("parsing message \n");
 				alarm(0);
 				parseMessage(buffer, recMsgSize);
-				printf("After parsing \n");
+				//printf("After parsing \n");
 				sendThread->setImageQuality(imageQuality);
 				recvCounter = 0;
 				if(stabilized)
@@ -432,7 +438,7 @@ int main()
 			
 			sendFailCounter = sendThread->getSendfailcounter();
 			
-			printf("Send fails: %d \n", sendFailCounter);
+			//printf("Send fails: %d \n", sendFailCounter);
 			if(sendFailCounter >= 150 || recvCounter >= 15)
 			{
 				printf("Send failed triggered \n");

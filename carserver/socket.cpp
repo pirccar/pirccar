@@ -134,15 +134,10 @@ int Socket::connect(std::string to)
 		 
 		remoteAddr.sin_family = AF_INET;
 		remoteAddr.sin_port = htons( port );
-		
-		/*		
-		struct timeval timeout;
-		timeout.tv_sec = 5;
-		timeout.tv_usec = 0;
-		
-		if(setsockopt(remoteSocket, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout)) <0)
+		int sendSize = 10000000;
+		if(setsockopt(remoteSocket, SOL_SOCKET, SO_SNDBUF, &sendSize, sizeof(sendSize)) <0)
 			printf("error setting socket timeout\n");
-		*/
+		
 		
 		//Connect to remote server
 		ret = ::connect(remoteSocket , (struct sockaddr *)&remoteAddr , sizeof(remoteAddr));
@@ -200,6 +195,24 @@ int Socket::write(unsigned char* msg, int size)
 	else
 	{
 		//printf("Msglen: %d \n", size);
+		/*
+		std::stringstream strs;
+		unsigned char messageSize[4];
+		
+		messageSize[0] = size & 0xFF;
+		messageSize[1] = (size>>8) & 0xFF;
+		messageSize[2] = (size>>16) & 0xFF;
+		messageSize[3] = (size>>24) & 0xFF;
+		
+		unsigned char sendArray[4+size];
+		memcpy(sendArray, messageSize, sizeof messageSize);
+		memcpy(sendArray+4, msg, sizeof(unsigned char) * size);
+		
+		printf("Internal send size: %d\n", 4+size);
+		if( (n = send(remoteSocket, sendArray, 4+size, 0)) < 0)
+		*/
+		
+		printf("Sending %d bytes \n", size);
 		if( (n = send(remoteSocket, msg, size, 0)) < 0)
 			printf("Error sending TCP\n");
 	}

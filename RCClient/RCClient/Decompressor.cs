@@ -44,41 +44,8 @@ namespace RCClient
                 using (Image image = Image.FromStream(new MemoryStream(arr)))
                 {
                     image.Save("output.jpeg", ImageFormat.Jpeg);
-                    /* OLD AND SLOW
-                     * Bitmap bitmap = new Bitmap(image);
-                    output = new Byte[bitmap.Width * bitmap.Height * 4];
-                    int pixel = 0;
-                    for (int y = 0; y < bitmap.Height; y++)
-                    {
-                        for (int x = 0; x < bitmap.Width; x++)
-                        {
-                            Color c = bitmap.GetPixel(x, y);
-                            output[pixel] = c.R;
-                            output[pixel + 1] = c.G;
-                            output[pixel + 2] = c.B;
-                            output[pixel + 3] = 255;
-                            pixel += 4;
-                        }
-                    }*/
-
-                    /* FASTER BUT BGR
-                    Bitmap bitmap = new Bitmap(image);
-                    BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, bitmap.PixelFormat);
-                    try
-                    {
-                        IntPtr ptr = data.Scan0;
-                        
-                        int bytes = Math.Abs(data.Stride) * bitmap.Height;
-                        output = new Byte[bytes];
-                        Marshal.Copy(ptr, output, 0, bytes);
-                    }
-                    finally
-                    {
-                        bitmap.UnlockBits(data);
-                    }*/
-
                     
-                    //FAST RGB, Pointer in C# = unsafe
+
                     unsafe
                     {
                         Bitmap bitmap = new Bitmap(image);

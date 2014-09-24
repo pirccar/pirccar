@@ -123,9 +123,8 @@ namespace RCClient
             listener = new TcpListener(localEndPoint.Address, port);
             
             listener.Start();
-
             tcpClient = listener.AcceptSocket();
-            tcpClient.ReceiveBufferSize = 1000000;
+            tcpClient.ReceiveBufferSize = 10000000;
         }
 
         public void bruteConnect(String ip, int port)
@@ -211,17 +210,21 @@ namespace RCClient
             try
             {
                 size = tcpClient.Receive(rec);
+                //byte[] sizeArray = new byte[4];
+                //Array.Copy(rec, sizeArray, 4);
+                //sizeArray.Reverse();
+                //messageSize = (UInt32)BitConverter.ToInt32(sizeArray, 0);
+                //returnArray = new byte[messageSize];
+                //Array.Copy(rec, 4, returnArray, 0, size - 4);
+               
             }
             catch(Exception e)
             {
                 MessageBox.Show(e.Message);
             }
 
-            byte[] ret = new byte[size];
-
-            Array.Copy(rec, ret, size);
-
-            return ret;
+            //return returnArray;
+            return rec;
         }
 
         private byte[] readFrameUDP()

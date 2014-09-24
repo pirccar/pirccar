@@ -48,9 +48,9 @@ namespace RCClient
         //Resolutions
         int screen_width = 1600;
         int screen_height = 768;
-        int fpv_texture_width = 128;
-        int fpv_texture_height = 128;
-        int imageQuality = 100;
+        int fpv_texture_width = 256;
+        int fpv_texture_height = 256;
+        int imageQuality = 75;
         int map_width = 256;
         int map_height = 256;
 
@@ -313,7 +313,7 @@ namespace RCClient
             String width = String.Format("{0:0000}", fpv_texture_width);
             String height = String.Format("{0:0000}", fpv_texture_height);
             String quality = String.Format("{0:000}", imageQuality);
-            String udp = String.Format("{0:0}", fpv_texture_width > 128 ? 0 : 1);
+            String udp = String.Format("{0:0}", fpv_texture_width > 256 ? 0 : 1);
             String send = "C" + throttleF + throttleB + gear + width + height + quality + udp;
             connection.send(send);
         }
@@ -720,7 +720,7 @@ namespace RCClient
 
                 if (!thread.IsAlive)
                 {
-                    readThread = new ReadThread(ip, fpv_texture_width, fpv_texture_height, fpv_texture_width > 128 ? false : true);
+                    readThread = new ReadThread(ip, fpv_texture_width, fpv_texture_height, fpv_texture_width > 256 ? false : true);
                     thread = new Thread(new ThreadStart(readThread.Run));
                     thread.Start();
                 }
@@ -728,7 +728,7 @@ namespace RCClient
                 {
                     readThread.kill();
                     thread.Join(500);
-                    readThread = new ReadThread(ip, fpv_texture_width, fpv_texture_height, fpv_texture_width > 128 ? false : true);
+                    readThread = new ReadThread(ip, fpv_texture_width, fpv_texture_height, fpv_texture_width > 256 ? false : true);
                     thread = new Thread(new ThreadStart(readThread.Run));
                     thread.Start();
                 }
@@ -763,14 +763,16 @@ namespace RCClient
             }
 
             //imageQuality
-            if (padState.DPad.Up == ButtonState.Pressed && prevPadState.DPad.Up == ButtonState.Released)
+            if ((padState.DPad.Up == ButtonState.Pressed && prevPadState.DPad.Up == ButtonState.Released) || 
+                (state.IsKeyDown(Keys.I) && prevState.IsKeyUp(Keys.I)))
             {
                 imageQuality += 5;
-                if (imageQuality > 100)
-                    imageQuality = 100;
+                if (imageQuality > 90)
+                    imageQuality = 90;
                 sendConfig();
             }
-            if (padState.DPad.Down == ButtonState.Pressed && prevPadState.DPad.Down == ButtonState.Released)
+            if ((padState.DPad.Down == ButtonState.Pressed && prevPadState.DPad.Down == ButtonState.Released) ||
+                (state.IsKeyDown(Keys.K) && prevState.IsKeyUp(Keys.K)))
             {
                 imageQuality -= 5;
                 if (imageQuality < 1)

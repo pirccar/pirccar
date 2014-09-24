@@ -15,7 +15,7 @@ namespace RCClient
         Socket_Connection connection;
         byte[] data;
         private int BUFFER_SIZE = 64*64*4;
-        bool dataReady;
+        volatile bool dataReady;
         volatile bool run = true;
         volatile bool connected = false;
         int width;
@@ -31,12 +31,12 @@ namespace RCClient
             this.isUdp = isUdp;
 
             BUFFER_SIZE = width * height * 4;
+            dataReady = false;
         }
 
         public void Run()
         {
             //create buffer and connection
-            data = new byte[BUFFER_SIZE];
             connection = new Socket_Connection(width, height);
 
             do
@@ -55,10 +55,11 @@ namespace RCClient
                     //mutex
                     if (!dataReady)
                     {
-                        //data = connection.readFrame();
                         data = connection.readFrame();
                         if (data != null && data.Length > 0)
+                        {
                             dataReady = true;
+                        }
                     }
                 }
                 
