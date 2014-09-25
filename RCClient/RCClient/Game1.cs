@@ -34,10 +34,6 @@ namespace RCClient
         GamePadState prevPadState;
         
         //Map
-        bool useBrowser = false;
-        Forms.WebBrowser browser;
-        bool browser_Initialized = false;
-        Drawing.Bitmap formsBuffer;
         Texture2D map;
         bool updateMap = false;
         bool renderMap = false;
@@ -143,34 +139,36 @@ namespace RCClient
         //This is called when the program starts
         protected override void Initialize()
         {
-            IsFixedTimeStep = true;
+            
+            IsFixedTimeStep = true; //run the program at a fixed FPS eg. 50 frames per second, if false then run as fast as possible
             //Window spawn location
-            Window.SetPosition(new Point(10, 10));
+            Window.SetPosition(new Point(10, 10)); //set the spawn location of the program window (upper left corner)
 
-            this.IsMouseVisible = true;
+            this.IsMouseVisible = true; //show or hide the mouse
 
             //Init
-            connection = new Socket_Connection(fpv_texture_width, fpv_texture_height);
-            readThread = new ReadThread(ip, fpv_texture_width, fpv_texture_height, false);
-            thread = new Thread(new ThreadStart(readThread.Run));
+            connection = new Socket_Connection(fpv_texture_width, fpv_texture_height); //ourgoíng socket
+            readThread = new ReadThread(ip, fpv_texture_width, fpv_texture_height, false); //readthread with internal incoming socket
+            thread = new Thread(new ThreadStart(readThread.Run)); //thread for readthread
 
-            servos = new Servo[16];
-            prevServos = new Servo[16];
-            camera = new Texture2D(graphics.GraphicsDevice, fpv_texture_width, fpv_texture_height, false, SurfaceFormat.Color);
-            decompressor = new Decompressor();
-            lxmean = new float[lxmeansize];
+            servos = new Servo[16]; //servo values
+            prevServos = new Servo[16]; //old servo values
+            camera = new Texture2D(graphics.GraphicsDevice, fpv_texture_width, fpv_texture_height, false, SurfaceFormat.Color); //camera FPV image
+            decompressor = new Decompressor(); //jpeg decompressor
+            lxmean = new float[lxmeansize]; //used for old mean input values
 
             //keyDispatcher = new KeyboardDispatcher(Window);
-            ipInputbox = new IpInputBox();
+            ipInputbox = new IpInputBox(); //inputbox used for ip input
 
-            torqueMeter = new Meter(160.0f, maxSpeed);
-            speedMeter = new Meter(0, 50.0f);
-            gpsSpeed = 0.0f;
+            torqueMeter = new Meter(160.0f, maxSpeed); //a meter for torque
+            speedMeter = new Meter(0, 50.0f); //a meter indicating the speed of the car
+            gpsSpeed = 0.0f; //the speed parsed from the gps string
 
-            //setup servos
+            //setup servos to default value
             for (int i = 0; i < 16; i++)
                 servos[i] = new Servo(i+1);
 
+            //set every servo to the middle position
             for (int i = 0; i < 16; i++)
             {
                 servos[i].setMid();
@@ -178,7 +176,7 @@ namespace RCClient
                 prevServos[i].setValue(servos[i].getValue());
             }
 
-            //Set camera servos, this will limit their movements
+            //Set servo types for servos that have a physical limitation
             servos[cameraXChannel].setType(ServoType.Camera);
             servos[cameraYChannel].setType(ServoType.Camera);
             servos[throttleBChannel].setType(ServoType.Throttle);
@@ -186,6 +184,7 @@ namespace RCClient
             servos[steeringFChannel].setType(ServoType.Steering);
             servos[steeringBChannel].setType(ServoType.Steering);
 
+            //setup the configuration boxes
             servoBoxes = new SelectBoxHandler();
             servoBoxes.LoadDefaults();
             servoBoxes.Add(new Vector2(250, 300), 250, 45, true);
@@ -198,24 +197,10 @@ namespace RCClient
             servoBoxes.Add(new Vector2(250, 650), 250, 45, true);
             LoadServoConfig();
 
-            //Browser, deprecated
-            if (useBrowser)
-            {
-                browser = new Forms.WebBrowser();
-                browser.Size = new Drawing.Size(map_width, map_height);
-                browser.DocumentCompleted += new Forms.WebBrowserDocumentCompletedEventHandler(wb_DocumentCompleted);
-                formsBuffer = new Drawing.Bitmap(map_width, map_height, Drawing.Imaging.PixelFormat.Format32bppArgb);
-                SetMapURL("http://www.tritech.se");
+            //load config file
+            LoadConfig(); 
 
-                while (!browser_Initialized)
-                {
-                    Forms.Application.DoEvents();
-                    Thread.Sleep(100);
-                }
-            }
-
-            LoadConfig();
-
+            //Create a menu
             menu = new Menu(new Vector2(screen_width / 2 - 200, screen_height / 2 - 200), screen_width, screen_height);
 
 
@@ -226,12 +211,7 @@ namespace RCClient
             base.Initialize();
         }
 
-        void wb_DocumentCompleted(object sender, Forms.WebBrowserDocumentCompletedEventArgs e)
-        {
-            Console.WriteLine(browser.Document.Body.InnerHtml);
-            browser_Initialized = true;
-        }
-
+        //Set new window size and apply these
         private void SetGraphics()
         {
             //graphics.ToggleFullScreen();
@@ -240,14 +220,17 @@ namespace RCClient
             graphics.ApplyChanges();
         }
 
+        //Load external content, png images and such
         protected override void LoadContent()
         {
-            //load a font
             
-            spriteBatch = new SpriteBatch(GraphicsDevice);
-            font = Content.Load<SpriteFont>("SpriteFont1");
-            map = new Texture2D(GraphicsDevice, map_width, map_height, false, SurfaceFormat.Color);
+            
+            spriteBatch = new SpriteBatch(GraphicsDevice); //Create a spritebatch, used to draw 2D graphics
+            font = Content.Load<SpriteFont>("SpriteFont1"); //Load our font
+            map = new Texture2D(GraphicsDevice, map_width, map_height, false, SurfaceFormat.Color); //create texture for map
 
+
+            //--Load textures for boxes and meters and set their positions--
             ipTexture = Content.Load<Texture2D>("textboxW");
             meter = Content.Load<Texture2D>("meter");
             meterStick = Content.Load<Texture2D>("meterStick");
@@ -270,52 +253,37 @@ namespace RCClient
 
             servoBoxes.InitAll(ipTexture, font);
 
+            //-- --
+
+
+            //Menu loads it's content internaly
             menu.LoadContent(GraphicsDevice, Content);
 
+            //Used for testing
             testTexture = new TextureColor(GraphicsDevice, Color.Red);
 
+            //This might have been used for an old screenshot method.... don't touch it
             PresentationParameters pp = GraphicsDevice.PresentationParameters;
             renderTarget = new RenderTarget2D(GraphicsDevice, pp.BackBufferWidth, pp.BackBufferHeight, false, GraphicsDevice.DisplayMode.Format, DepthFormat.None, pp.MultiSampleCount, RenderTargetUsage.DiscardContents);
         }
 
         protected override void UnloadContent()
         {
-            // TODO: Unload any non ContentManager content here
-        }
-
-        //Deprecated
-        private void SetMapURL(String url)
-        {
-            browser.Url = new Uri(url);
-            browser.Navigate(url);
-            updateMap = true;
-        }
-
-        //Deprecated
-        private void CopyBitmapToTexture()
-        {
-            byte[] textureData = new byte[4 * map_width * map_height];
-
-            System.Drawing.Imaging.BitmapData bmpData = formsBuffer.LockBits(new System.Drawing.Rectangle(0, 0, map_width, map_height), System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-            IntPtr safePtr = bmpData.Scan0;
-            System.Runtime.InteropServices.Marshal.Copy(safePtr, textureData, 0, textureData.Length);
-            formsBuffer.UnlockBits(bmpData);
-
-            map.SetData<byte>(textureData);
+            //well this one is empty but dont remove it otherwise the underlaying API will be very very mad at you....
         }
 
         //send client config to server
         private void sendConfig()
         {
-            String throttleF = String.Format("{0:00}", throttleFChannel+1);
-            String throttleB = String.Format("{0:00}", throttleBChannel + 1);
-            String gear = String.Format("{0:00}", gearChannel+1);
-            String width = String.Format("{0:0000}", fpv_texture_width);
-            String height = String.Format("{0:0000}", fpv_texture_height);
-            String quality = String.Format("{0:000}", imageQuality);
-            String udp = String.Format("{0:0}", fpv_texture_width > 256 ? 0 : 1);
+            String throttleF = String.Format("{0:00}", throttleFChannel+1); //let the server know which channel is the FThrottle
+            String throttleB = String.Format("{0:00}", throttleBChannel + 1); //let the server know which channel is the BThrottle
+            String gear = String.Format("{0:00}", gearChannel+1);// let the server know which channel is the gear channel
+            String width = String.Format("{0:0000}", fpv_texture_width); //let server know at what size to capture the image
+            String height = String.Format("{0:0000}", fpv_texture_height);//let server know at what size to capture the image
+            String quality = String.Format("{0:000}", imageQuality); //And compress to what quality?
+            String udp = String.Format("{0:0}", fpv_texture_width > 256 ? 0 : 1); //And should the server use udp or tcp for sending data?
             String send = "C" + throttleF + throttleB + gear + width + height + quality + udp;
-            connection.send(send);
+            connection.send(send); //Send the config string to the server
         }
 
         //checks input in configboxes for servo channels
@@ -357,8 +325,10 @@ namespace RCClient
             System.IO.File.WriteAllText(path, output); 
         }
 
+        //Save config to a file
         private void SaveConfig()
         {
+            //Just store the last successful Ip in the config for now
             String output = "ip:" + ip + "\n";
             String path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\config.cfg";
             System.IO.File.WriteAllText(path, output);
@@ -388,6 +358,7 @@ namespace RCClient
             }
         }
 
+        //Load config from a file
         private void LoadConfig()
         {
             String path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\config.cfg";
@@ -397,6 +368,7 @@ namespace RCClient
                 input = System.IO.File.ReadAllText(path);
                 String[] lines = input.Split('\n');
 
+                //Parse the file
                 for (int i = 0; i < lines.Length; i++)
                 { 
                     if(lines[i].Contains("ip"))
@@ -420,31 +392,32 @@ namespace RCClient
 
             for (int i = 0; i < 16; i++)
             {
-                if (i == gearChannel)
+                if (i == gearChannel) //we've had some problems with the gear not changing on input, so we spam this to the server
                 {
                     msg += servos[i].getMessage();
                     nSent++;
                 }
-                else if (servos[i].getValue() != prevServos[i].getValue())
+                else if (servos[i].getValue() != prevServos[i].getValue()) //Just send servo values that have changed since the last time we checked
                 {
                     msg += servos[i].getMessage();
                     nSent++;
                 }
             }
 
+            //just send if we are connected
             if (connection.isConnected())
             {
-                if (nSent > 0 && stabilized)
+                if (nSent > 0 && stabilized) //If we need to send anything and the connection is stable
                 {
                     connection.send(msg);
                 }
-                else
+                else //Else just send a ping to keep the connection alive
                 {
                     connection.send("P");
                 }
             }
 
-            for (int i = 0; i < 16; i++)
+            for (int i = 0; i < 16; i++) //store current servo values so we can use these to check for changes next time
             {
                 prevServos[i].setValue(servos[i].getValue());
             }
@@ -472,6 +445,8 @@ namespace RCClient
                         value = value.Replace('.', ','); //Double.Parse() expects ',' instead of '.' for doubles
                         double vol = Double.Parse(value);
 
+
+                        //Use a mean calculation for voltages, makes the reading less jumpy
                         //Channel 0
                         if (int.Parse(channel) == 0)
                         {
@@ -519,7 +494,8 @@ namespace RCClient
                                 sum += amps1[j];
                             }
                             sum /= amps1.Length;
-                            sum = Math.Round((sum / 0.025), 3);
+                            //sum = Math.Round((sum / 0.025), 3);
+                            sum = Math.Round((((sum * 3.3) / 5.0) - 1.65) / 0.11, 3);
                             batteryString3 = "Pi Amps:" + sum;
                         }
                     }
@@ -545,7 +521,7 @@ namespace RCClient
                 }
                 else if (data[0] == '$' && data[1] == 'G' && data[2] == 'P' && data[3] == 'R') //GPS data
                 {
-                    //NMEA RMC
+                    //NMEA RMC used as a protocol, google it
                     String str = System.Text.Encoding.ASCII.GetString(data);
                     String[] fields = str.Split(',');
                     String command = fields[0];
@@ -565,10 +541,12 @@ namespace RCClient
                     //only grab map data if gps is active
                     if (active.CompareTo("A") == 0)
                     {
+                        //Knots to kmh
                         speed = speed.Replace(".", ",");
                         float knots = float.Parse(speed);
                         gpsSpeed = 1.852f * knots;
 
+                        //--Correction of longitude and latitude--
                         longitude = longitude.Replace(".", ",");
                         int index = longitude.IndexOf(",");
 
@@ -597,15 +575,19 @@ namespace RCClient
                         if (longEW.CompareTo("W") == 0)
                             longitude = "-" + longitude;
 
-                        latlng = longitude + "," + latitude;
-                        String maptype = "hybrid";
-                        String format = "jpg";
+                        //-- --
 
-                        WebClient wc = new WebClient();
+                        latlng = longitude + "," + latitude;
+                        String maptype = "hybrid"; //type of map to grab from google
+                        String format = "jpg"; //format of map image
+
+                        WebClient wc = new WebClient(); //create a webclient
+
+                        //Command to send to google so we cant get our map, add a &key=andyour key to get the map more frequantly
                         String maps_command = "http://maps.googleapis.com/maps/api/staticmap?center=" + latlng +
                             "&zoom=16&size=" + map_width + "x" + map_height + "&format=" + format + "&maptype=" + maptype + "&markers=color:blue%7Clabel:S%7C" +
-                                latlng + "&sensor=true&key=AIzaSyC8ybRNzgn675MF0ABD1-_SZ0rYudTKixI";
-                        Byte[] raw;
+                                latlng + "&sensor=true";
+                        Byte[] raw; //used for the jpeg image from google
                         Byte[] decomp;
                         try
                         {
@@ -615,10 +597,10 @@ namespace RCClient
                         {
                             wc.Dispose();
                         }
-                        decomp = decompressor.Decompress(raw, false);
+                        decomp = decompressor.Decompress(raw, false); //Decompress the image to a raw rgba format
                         if (decomp != null)
                         {
-                            map.SetData(decomp);
+                            map.SetData(decomp); //Set the image to the map texture
                         }
                     }
                     prevLatlng = latlng;
@@ -657,13 +639,13 @@ namespace RCClient
             }
         }
 
-        //updates everything
+        //updates user input
         protected override void Update(GameTime gameTime)
         {
             GamePadState padState = GamePad.GetState(PlayerIndex.One, GamePadDeadZone.IndependentAxes);
             KeyboardState state = Keyboard.GetState();
 
-
+            //Toggle the menu
             if ((padState.Buttons.Back == ButtonState.Pressed && prevPadState.Buttons.Back == ButtonState.Released)
                 || (state.IsKeyDown(Keys.Escape) && prevState.IsKeyUp(Keys.Escape)))
             {
@@ -674,7 +656,7 @@ namespace RCClient
             //Exit application
             if (menu.GetQuit())
             {
-                if (thread.IsAlive)
+                if (thread.IsAlive) //Kill the readthread if its alive
                 {
                     readThread.kill();
                     if (connection.isConnected())
@@ -683,7 +665,7 @@ namespace RCClient
                     thread.Join();
                 }
 
-                SaveConfig();
+                SaveConfig(); //Save config
                 Exit();
             }
 
@@ -692,6 +674,8 @@ namespace RCClient
             {
                 bool useInputIp = false;
                 String ipinput = ipInputbox.GetText();
+                
+                //Parse the ip that the user entered
                 if (ipinput != null)
                 {
                     if (ipinput.Length > 7 && ipinput.Length < 16)
@@ -715,54 +699,50 @@ namespace RCClient
                     }
                 }
 
-                parseConfigBoxes();
+                parseConfigBoxes(); //Check config boxes for servo location
                 ip = ipinput;
 
-                if (!thread.IsAlive)
+                if (!thread.IsAlive) //If readthread is not alive then start it!
                 {
                     readThread = new ReadThread(ip, fpv_texture_width, fpv_texture_height, fpv_texture_width > 256 ? false : true);
                     thread = new Thread(new ThreadStart(readThread.Run));
                     thread.Start();
                 }
-                else if (!connection.isConnected())
+                else if (!connection.isConnected()) //But if the thread is alive and we aren't connected
                 {
-                    readThread.kill();
-                    thread.Join(500);
+                    readThread.kill(); //kill the readthread
+                    thread.Join(500); //wait for it to die
+
+                    //And start it again
                     readThread = new ReadThread(ip, fpv_texture_width, fpv_texture_height, fpv_texture_width > 256 ? false : true);
                     thread = new Thread(new ThreadStart(readThread.Run));
                     thread.Start();
                 }
-                
+                //Else we dont do anything
+
                 if (useInputIp)
                     connection.connect(ipinput, 8001);
 
-               
-
-                sendConfig();
-
-                /*if (!streamThreadT.IsAlive)
-                    streamThreadT.Start();*/
-
-                //sendConfig();
+                sendConfig(); //send the config
             }
 
             //Disconnect
             if(menu.GetDisconnect())
             {
-                if (thread.IsAlive)
+                if (thread.IsAlive) //Kill the read thread
                 {
                     readThread.kill();
                     thread.Join();
                 }
                 if (connection.isConnected())
-                    connection.disconnect();
+                    connection.disconnect(); //disconnect the outgoing connectiong
 
                 stabilized = false;
 
-                SaveConfig();
+                SaveConfig(); //Save config
             }
 
-            //imageQuality
+            //imageQuality, change it localy and send the new value to the server
             if ((padState.DPad.Up == ButtonState.Pressed && prevPadState.DPad.Up == ButtonState.Released) || 
                 (state.IsKeyDown(Keys.I) && prevState.IsKeyUp(Keys.I)))
             {
@@ -780,7 +760,7 @@ namespace RCClient
                 sendConfig();
             }
 
-            //Servos
+            //Servos, used to chane servo config with the controller
             if (!connection.isConnected())
             {
                 if (padState.DPad.Right == ButtonState.Pressed && prevPadState.DPad.Right == ButtonState.Released)
@@ -793,15 +773,7 @@ namespace RCClient
                 }
             }
 
-            //map
-            if (updateMap && browser.ReadyState == Forms.WebBrowserReadyState.Complete)
-            {
-                browser.DrawToBitmap(formsBuffer, new Drawing.Rectangle(0, 0, map_width, map_height));
-                CopyBitmapToTexture();
-                updateMap = false;
-            }
-
-            //Gear
+            //Gear, toggles the gear state between Drive and Reverse
             if (padState.Buttons.A == ButtonState.Pressed && prevPadState.Buttons.A == ButtonState.Released)
             {
                 gear = !gear;
@@ -811,20 +783,21 @@ namespace RCClient
                     servos[gearChannel].setOff();
             }
 
-            //Strafe
+            //Strafe, the car turns with both sets of wheels, making it able to strafe...
             if (padState.Buttons.LeftStick == ButtonState.Pressed && prevPadState.Buttons.LeftStick == ButtonState.Released)
             {
                 strafe = !strafe;
             }
 
             //grab controller values
-            x = -padState.ThumbSticks.Right.X;
-            y = -padState.ThumbSticks.Right.Y;
-            z = padState.Triggers.Right;
+            x = -padState.ThumbSticks.Right.X; //used for camera panning
+            y = -padState.ThumbSticks.Right.Y; //used for camera tilting
+            z = padState.Triggers.Right; //used for throttle
 
             padState.ThumbSticks.Left.Normalize();
-            lx = padState.ThumbSticks.Left.X;
+            lx = padState.ThumbSticks.Left.X; //used for steering
 
+            /*
             if (lx > 0 && lx < xmin)
                 xmin = lx;
 
@@ -852,12 +825,25 @@ namespace RCClient
                 lx += lxmean[i];
 
             lx /= lxmeansize;
+            */
+            //Expo function for steering, smaller inputs are easier to make
+            if (lx >= 0) 
+                lx = (float)Math.Pow(lx, 1.5);
+            else
+            {
+                lx *= -1;
+                lx = (float)Math.Pow(lx, 1.5);
+                lx *= -1;
+            }
+
 
             //lx *= 0.66f;
 
             //Deadzoneing of camera
             float xMoveFactor = 0.0f;
             float yMoveFactor = 0.0f;
+
+            //the camera stays in place when you move it, so calculate how much to move the camera
             if (x > 0.5f || x < -0.5f)
             {
                 xMoveFactor = (100.0f * x * (float)gameTime.ElapsedGameTime.TotalSeconds);
@@ -879,7 +865,7 @@ namespace RCClient
             servos[throttleFChannel].setValue(MathHelper.Lerp(servos[throttleFChannel].getMin(), maxSpeed, z)); //throttle
             servos[throttleBChannel].setValue(MathHelper.Lerp(servos[throttleBChannel].getMin(), maxSpeed, z));
 
-            //speedLimiter
+            //speedLimiter, very useful for driving slow.. or very very fast
             if (padState.Buttons.Y == ButtonState.Pressed && prevPadState.Buttons.Y == ButtonState.Released)
             {
                 speedLimiter++;
@@ -895,19 +881,16 @@ namespace RCClient
                 else if (speedLimiter == 3)
                     maxSpeed = 210.0f;
 
-                torqueMeter.SetMax(maxSpeed);
+                torqueMeter.SetMax(maxSpeed); //Set the max value of the torque meter
             }
 
-            //Send config, this should become an automated process on connect
+            //Send config, this should become an automated process on connect (it is now)
             if (padState.Buttons.X == ButtonState.Pressed && prevPadState.Buttons.X == ButtonState.Released)
             {
                 sendConfig();
             }
 
-            if (state.IsKeyDown(Keys.W) && prevState.IsKeyUp(Keys.W))
-                sendConfig();
-
-            //Reset view
+            //Reset view, the camera will look straight forward
             if (GamePad.GetState(PlayerIndex.One).Buttons.B == ButtonState.Pressed)
             {
                 servos[cameraXChannel].setMid();
@@ -960,21 +943,25 @@ namespace RCClient
         //Render everything to a texture
         private void Render(GameTime gameTime)
         {
-            spriteBatch.Begin();
+            spriteBatch.Begin(); //Always call begin before your first draw call
+
+            //draw the camera image
             spriteBatch.Draw(camera, new Rectangle(0, 0, 1024, screen_height), null, Color.White, MathHelper.Pi, new Vector2((float)fpv_texture_width, (float)fpv_texture_height), SpriteEffects.None, 0);
 
+            //Let the user know if we are connected or not
             if (connection.isConnected())
                 spriteBatch.DrawString(font, "Connected", new Vector2(screen_width - 200, 50), Color.White);
             else
                 spriteBatch.DrawString(font, "Disconnected", new Vector2(screen_width - 200, 50), Color.White);
 
+            //Draw fps string and voltage readings
             spriteBatch.DrawString(font, "FPS:" + framesPSec.ToString(), new Vector2(1024, 100), Color.White);
             spriteBatch.DrawString(font, batteryString0, new Vector2(screen_width - 300, 100), Color.White);
             spriteBatch.DrawString(font, batteryString1, new Vector2(screen_width - 300, 135), Color.White);
             spriteBatch.DrawString(font, batteryString2, new Vector2(screen_width - 300, 170), Color.White);
             spriteBatch.DrawString(font, batteryString3, new Vector2(screen_width - 300, 205), Color.White);
 
-            if (printDebug)
+            if (printDebug) //if debug is enable render these values
             {
                 spriteBatch.DrawString(font, x.ToString() + ":" + servos[cameraXChannel].getValue().ToString(), new Vector2(10, 50), Color.White);
                 spriteBatch.DrawString(font, y.ToString() + ":" + servos[cameraYChannel].getValue().ToString(), new Vector2(10, 100), Color.White);
@@ -982,7 +969,10 @@ namespace RCClient
                 spriteBatch.DrawString(font, lx.ToString() + ":" + servos[steeringFChannel].getValue().ToString() + ":" + servos[steeringBChannel].getValue().ToString(), new Vector2(10, 200), Color.White);
                 spriteBatch.DrawString(font, xmin.ToString(), new Vector2(1124, 650), Color.White);
             }
+            //are we strafing?
             spriteBatch.DrawString(font, "Strafe: " + (strafe ? "On" : "Off"), new Vector2(1024, screen_height / 2 - 200), Color.White);
+
+            //gear value read from the server
             spriteBatch.DrawString(font, "Gear: " + (serverGear ? "Reverse" : "Forward"), new Vector2(1024, screen_height / 2 - 250), Color.White);
             if (stabilized)
                 spriteBatch.DrawString(font, "Connection Stabilized", new Vector2(1024, 50), Color.Green);
@@ -990,6 +980,7 @@ namespace RCClient
                 spriteBatch.DrawString(font, "Connection Unstable", new Vector2(1024, 50), Color.Red);
             spriteBatch.DrawString(font, "Speed limit: " + maxSpeed, new Vector2(1024, screen_height / 2 - 150), Color.White);
 
+            //If we aren't connected draw some welcome strings and servo strings
             if(!connection.isConnected())
             {
                 spriteBatch.DrawString(font, "Hello and welcome to the car client!", new Vector2(100, 50), Color.White);
@@ -1011,32 +1002,33 @@ namespace RCClient
             //ipInput.Draw(spriteBatch, gameTime);
             ipInputbox.Draw(spriteBatch);
 
+            //If we are rendering the map, then render it!
             if (renderMap || alwaysRenderMap)
                 spriteBatch.Draw(map, new Rectangle(1024, (screen_height / 2), screen_width - 1024, (screen_height / 2)), Color.White);
 
+            //draw meters
             torqueMeter.Draw(spriteBatch);
             speedMeter.Draw(spriteBatch);
 
+            //And the menu
             menu.Draw(spriteBatch);
 
 
             //spriteBatch.Draw(testTexture, new Rectangle(0, 0, screen_width, screen_height), Color.White);
-            spriteBatch.End();
+            spriteBatch.End(); //End the drawing 
         }
 
         //draw the rendered texture to the screen
         protected override void Draw(GameTime gameTime)
         {
-            //GraphicsDevice.Clear(Color.Black);
-
-            //Render(gameTime);
-
+            //Set the graphics engine to draw every drawcall to a texture instead of the screen
             GraphicsDevice.SetRenderTarget(renderTarget);
             GraphicsDevice.Clear(Color.Black);
             Render(gameTime);
             GraphicsDevice.SetRenderTarget(null);
             screen = (Texture2D)renderTarget;
 
+            //And then draw the texture to the screen
             GraphicsDevice.Clear(Color.Black);
             spriteBatch.Begin();
             spriteBatch.Draw(screen, Vector2.Zero, Color.White);
