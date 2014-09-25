@@ -85,8 +85,6 @@ Socket::~Socket(void)
 			printf("localSocket opt error \n");
 		}
 		
-		
-		
 		if(bind(localSocket, (struct sockaddr *) &localAddr, sizeof(localAddr)) < 0)
 			printf("bind error \n");
 	

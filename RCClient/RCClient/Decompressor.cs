@@ -86,8 +86,6 @@ namespace RCClient
             {
                 using (Image image = Image.FromStream(new MemoryStream(arr)))
                 {
-                    
-
                     unsafe
                     {
                         Bitmap bitmap = new Bitmap(image);

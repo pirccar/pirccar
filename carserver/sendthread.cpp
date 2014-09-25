@@ -78,6 +78,75 @@ void SendThread::setChannel(int channel, std::string value)
 		chann3String = value;
 }
 
+void SendThread::readBattery()
+{
+	//Send battery info
+	if(batCount >= 12)
+	{
+		std::string sendStr = chann0String+ ":" + chann1String + ":" + chann2String + ":" + chann3String;;
+		//sendStr += 
+		const char* send = sendStr.c_str();
+		//printf("Sending: %s \n", send);
+		if(socket.write(send) != sendStr.length())
+		{
+			printf("UDP disconnected\n");
+		}
+		
+		batCount = 0;
+	}
+}
+
+bool SendThread::readCamera()
+{
+	//Send texture			
+	unsigned char* imageBuffer = NULL;
+	imageBuffer = cam.getBuffer();
+	if(imageBuffer != NULL) //read an image from the camera
+	{
+		compressAndSend(imageBuffer);
+		batCount++;
+		stableCount++;
+		gearCount++;
+	}
+	else
+	{
+		sendfailcounter++;
+		//printf("internal sendfail: %d \n", sendfailcounter);
+		usleep(5000);
+		
+		if(sendfailcounter > 150)
+		{
+			this->stop();
+			return false;
+		}
+	}
+	
+	return true;
+}
+
+void SendThread::readGear()
+{
+	if(gearCount >= 32) //send gear info
+	{
+		int gearValue = 470;//getPWMOff(gearChannel);
+		if(gearValue < 470)
+		{
+			if(socket.write("G0") != 2)
+			{
+				printf("Failed to send gear message message \n");
+			}
+		}
+		else
+		{
+			if(socket.write("G1") != 2)
+			{
+				printf("Failed to send gear message message \n");
+			}
+		}
+		gearCount = 0;
+	}
+}
+
 void SendThread::readGPS()
 {
 	unsigned char serial_buf[256];
@@ -145,6 +214,49 @@ void SendThread::readGPS()
 	}
 }
 
+void SendThread::readStabilized()
+{
+	//Unstable / stable connection
+	if(prev_stab_state && !stabilized)
+	{
+		clock_gettime(CLOCK_REALTIME, &now);
+		start_time = now.tv_sec;
+		printf("connection unstable \n");
+	}
+	
+	if(!stabilized)
+	{
+		clock_gettime(CLOCK_REALTIME, &now);
+		if(now.tv_sec - start_time > 5)
+		{
+			stabilized = true;
+			
+			printf("connection stablilized \n");
+		}
+	}
+	
+	//let the client know about the connection status
+	if(stableCount >= 24)
+	{
+		if(stabilized)
+		{
+			if(socket.write("ready") != 5)
+			{
+				printf("Failed to send stabilized message \n");
+			}
+		}
+		else
+		{
+			if(socket.write("unready") != 7)
+			{
+				printf("Failed to send unstable message \n");
+			}
+		}
+		stableCount = 0;
+	}
+	prev_stab_state = stabilized;
+}
+
 void SendThread::compressAndSend(unsigned char imageBuffer[])
 {
 	unsigned char rgbBuffer[(imageWidth*imageHeight)*3];
@@ -206,7 +318,7 @@ void SendThread::compressAndSend(unsigned char imageBuffer[])
 	{
 		//printf("Sent: %d \n", nSent);
 		//printf("Sent to: %s \n", inet_ntoa(frameServerAddr.sin_addr));
-		printf("Resetting sendfail, was: %d \n", sendfailcounter);
+		//printf("Resetting sendfail, was: %d \n", sendfailcounter);
 		sendfailcounter = 0;
 	}
 	
@@ -238,7 +350,6 @@ void SendThread::init(void)
 	sendfailcounter = 0;
 	clock_gettime(CLOCK_REALTIME, &now);
 	start_time = now.tv_sec;
-	printf("t3\n");
 	
 	sleep(3);
 }
@@ -247,102 +358,11 @@ void SendThread::mainLoop(void)
 {
 	if(!halted)
 	{
-		//Send texture			
-		unsigned char* imageBuffer = NULL;
-		imageBuffer = cam.getBuffer();
-		if(imageBuffer != NULL) //read an image from the camera
-		{
-			compressAndSend(imageBuffer);
-			batCount++;
-			stableCount++;
-			gearCount++;
-		}
-		else
-		{
-			sendfailcounter++;
-			printf("internal sendfail: %d \n", sendfailcounter);
-			usleep(5000);
-			
-			//sleep(1);
-			//return;
-		}
-		
-		//Unstable / stable connection
-		if(prev_stab_state && !stabilized)
-		{
-			clock_gettime(CLOCK_REALTIME, &now);
-			start_time = now.tv_sec;
-			
-			printf("connection unstable \n");
-		}
-		
-		if(!stabilized)
-		{
-			clock_gettime(CLOCK_REALTIME, &now);
-			if(now.tv_sec - start_time > 5)
-			{
-				stabilized = true;
-				
-				printf("connection stablilized \n");
-			}
-		}
-		
-		
-		//let the client know about the connection status
-		if(stableCount >= 24)
-		{
-			if(stabilized)
-			{
-				if(socket.write("ready") != 5)
-				{
-					printf("Failed to send stabilized message \n");
-				}
-			}
-			else
-			{
-				if(socket.write("unready") != 7)
-				{
-					printf("Failed to send unstable message \n");
-				}
-			}
-			stableCount = 0;
-		}
-		
-		
-		//Send battery info
-		if(batCount >= 12)
-		{
-			std::string sendStr = chann0String+ ":" + chann1String + ":" + chann2String + ":" + chann3String;;
-			//sendStr += 
-			const char* send = sendStr.c_str();
-			//printf("Sending: %s \n", send);
-			if(socket.write(send) != sendStr.length())
-			{
-				printf("UDP disconnected\n");
-			}
-			
-			batCount = 0;
-		}
-		else if(gearCount >= 32) //send gear info
-		{
-			int gearValue = 470;//getPWMOff(gearChannel);
-			if(gearValue < 470)
-			{
-				if(socket.write("G0") != 2)
-				{
-					printf("Failed to send gear message message \n");
-				}
-			}
-			else
-			{
-				if(socket.write("G1") != 2)
-				{
-					printf("Failed to send gear message message \n");
-				}
-			}
-			gearCount = 0;
-		}
-		prev_stab_state = stabilized;
+		readCamera();
+		readBattery();
+		readStabilized();
+		readGear();
+		//readGPS();
 	}
 	else
 	{

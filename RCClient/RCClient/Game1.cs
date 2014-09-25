@@ -35,7 +35,6 @@ namespace RCClient
         
         //Map
         Texture2D map;
-        bool updateMap = false;
         bool renderMap = false;
         bool alwaysRenderMap = true;
         String prevLatlng;

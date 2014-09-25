@@ -52,7 +52,11 @@ private:
 	int stableCount;
 	int gearCount;
 	
+	void readBattery();
+	bool readCamera();
+	void readGear();
 	void readGPS();
+	void readStabilized();
 	void compressAndSend(unsigned char imageBuffer[]);
 	
 	virtual void init(void);

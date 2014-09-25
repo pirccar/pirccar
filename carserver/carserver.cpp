@@ -165,7 +165,7 @@ int parseMessage(char buf[], int size){
 		gotConfig = true;
 	}
 	else if(ready){ //is command S010400 = set servo 1 to 400 off
-		printf("Got servo data \n");
+		//printf("Got servo data \n");
 		int i = 0;
 		while(i + 7 < size)
 		{
@@ -369,6 +369,8 @@ int main()
 				alarm(0);
 				recTime = 10; //Increase recv timer to 10 seconds
 				stabilized = false;
+				if(!senderStarted)
+					sendThread->setStabilized(false);
 				recvCounter++;
 				printf("End of recv failed\n");
 				//break;
@@ -438,10 +440,10 @@ int main()
 			
 			sendFailCounter = sendThread->getSendfailcounter();
 			
-			//printf("Send fails: %d \n", sendFailCounter);
+			//printf("External Sendfail: %d \n", sendFailCounter);
 			if(sendFailCounter >= 150 || recvCounter >= 15)
 			{
-				printf("Send failed triggered \n");
+				printf("Send failed triggered!\n");
 				connected = false;
 				globalConnected = false;
 				senderStarted = false;
