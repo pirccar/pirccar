@@ -4,6 +4,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include "ini.h"
+
 using namespace std;
 
 ServoControl::ServoControl()
@@ -36,13 +38,13 @@ char ServoControl::saveDefaultValues(char*)
 	printf("Opening file for reading...");
 	string values;
 	ifstream infile;
-	infile.open ("servo_values.txt");
+	infile.open ("carserver.ini");
 	
 	printf("OK!\n");
 	printf("Reading");
 	while(!infile.eof())				// Read file until EOF.
 	{
-		printf(".");
+		printf("");
 		getline(infile,values); // Saves the line from file to string
 		cout<<values; // And prints it out.
 	}
@@ -51,37 +53,46 @@ char ServoControl::saveDefaultValues(char*)
 	
 	char result = 0;
 	
-	
 	return result;
 }
 
 //Private
 void ServoControl::init(void)
 {
-	char temp;
-	
+	printf("Initializing PWM-module\n");
 	PCA9685_init();
-	printf("Initializing PWM-module\n");
 	PCA9685_reset();
-	printf("Initializing PWM-module\n");
 	setPWMFreq(60);
-	printf("Initializing PWM-module\n");
-	temp = loadDefaultValues();
 	
-	if(temp == 0)
-	{
+	if(loadDefaultValues() == TRUE) {
 		printf("Default PWM-values loaded successfully!");
 	}
-	else
-	{
-		printf("Damn! something went wrong when opening the file...");
+	else {
+		printf("Damn! something went wrong... I quit..");
+		//Shut down program here...
 	}
 }
 
 char ServoControl::loadDefaultValues(void)
 {
-	char result = 1;
+	char result = FALSE;
+	int servoposition;
 	
+    INIReader reader("carserver.ini");		//Open file
+
+    if (reader.ParseError() < 0) {			//File opened OK?
+        std::cout << "Can't load 'carserver.ini'\n";
+		return 1;
+    }
+	else {
+		std::cout << "Config loaded from 'carserver.ini': app name=" << reader.Get("info", "appname", "UNKNOWN") << ",\nversion=" << reader.GetInteger("info", "version", -1) << , "\n\n";
+		for(i=1;i<17;i++) {
+			servoposition = reader.GetInteger("servo"+itoa(i), "default_value", -1);		//Read out servo value from ini-file....
+			setServoPosition(i,servoposition);												//...and write it to PWM module
+			printf("Servo %d set to %d\n", i, servoposition);
+		}
+        result = TRUE;
+	}
 	
-	return result;
+ return result;
 }

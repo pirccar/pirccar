@@ -17,4 +17,5 @@ public:
 private:
 	void init(void);											//Internal function, initializes PWM-module 
 	char loadDefaultValues(void);								//Loads default values from file, returns 0 if successful
+	static int ServoControl::handler(void* user, const char* section, const char* name, const char* value)
 };
