@@ -43,8 +43,10 @@ int ServoControl::readServoPosition(char servo)
 
 bool ServoControl::saveDefaultValues(char section, int* newvalue)
 {
+	bool result = false;
+	
 	// Open ini file for writing
-    if (reader.Load("carserver.ini") != true) {						//File opened OK?
+/*    if (reader.Load("carserver.ini") != true) {						//File opened OK?
         std::cout << "Can't load 'carserver.ini'\n";
 		return 1;
     }
@@ -63,7 +65,7 @@ bool ServoControl::saveDefaultValues(char section, int* newvalue)
 		}
 		CIniSection* pSection = reader.GetSection("info");			//Look for section "info" in ini-file
 		if( pSection ) {											//Section exists ?
-			std::cout << "'carserver.ini' opened for writing\n"\n"; //Prints out some stuff from the info section
+			std::cout << "'carserver.ini' opened for writing\n"; //Prints out some stuff from the info section
 		}
 		else {
 			std::cout << "Section 'info' does not exists\n";
@@ -105,9 +107,7 @@ bool ServoControl::saveDefaultValues(char section, int* newvalue)
 		}
         result = true;
 	}
-	
-	char result = 0;
-	
+*/	
 	return result;
 }
 

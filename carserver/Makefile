@@ -39,10 +39,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/pi/carserver
+CMAKE_SOURCE_DIR = /home/pi/public/pirccar/carserver
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/pi/carserver
+CMAKE_BINARY_DIR = /home/pi/public/pirccar/carserver
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -69,9 +69,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/pi/carserver/CMakeFiles /home/pi/carserver/CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/pi/public/pirccar/carserver/CMakeFiles /home/pi/public/pirccar/carserver/CMakeFiles/progress.marks
 	$(MAKE) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/pi/carserver/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/pi/public/pirccar/carserver/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -255,6 +255,30 @@ carserver.cpp.s:
 	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/carserver.cpp.s
 .PHONY : carserver.cpp.s
 
+inifile.o: inifile.cpp.o
+.PHONY : inifile.o
+
+# target to build an object file
+inifile.cpp.o:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/inifile.cpp.o
+.PHONY : inifile.cpp.o
+
+inifile.i: inifile.cpp.i
+.PHONY : inifile.i
+
+# target to preprocess a source file
+inifile.cpp.i:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/inifile.cpp.i
+.PHONY : inifile.cpp.i
+
+inifile.s: inifile.cpp.s
+.PHONY : inifile.s
+
+# target to generate assembly for a file
+inifile.cpp.s:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/inifile.cpp.s
+.PHONY : inifile.cpp.s
+
 lcdscreen.o: lcdscreen.cpp.o
 .PHONY : lcdscreen.o
 
@@ -375,6 +399,54 @@ sendthread.cpp.s:
 	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/sendthread.cpp.s
 .PHONY : sendthread.cpp.s
 
+servocontrol.o: servocontrol.cpp.o
+.PHONY : servocontrol.o
+
+# target to build an object file
+servocontrol.cpp.o:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/servocontrol.cpp.o
+.PHONY : servocontrol.cpp.o
+
+servocontrol.i: servocontrol.cpp.i
+.PHONY : servocontrol.i
+
+# target to preprocess a source file
+servocontrol.cpp.i:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/servocontrol.cpp.i
+.PHONY : servocontrol.cpp.i
+
+servocontrol.s: servocontrol.cpp.s
+.PHONY : servocontrol.s
+
+# target to generate assembly for a file
+servocontrol.cpp.s:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/servocontrol.cpp.s
+.PHONY : servocontrol.cpp.s
+
+servocontrolthread.o: servocontrolthread.cpp.o
+.PHONY : servocontrolthread.o
+
+# target to build an object file
+servocontrolthread.cpp.o:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/servocontrolthread.cpp.o
+.PHONY : servocontrolthread.cpp.o
+
+servocontrolthread.i: servocontrolthread.cpp.i
+.PHONY : servocontrolthread.i
+
+# target to preprocess a source file
+servocontrolthread.cpp.i:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/servocontrolthread.cpp.i
+.PHONY : servocontrolthread.cpp.i
+
+servocontrolthread.s: servocontrolthread.cpp.s
+.PHONY : servocontrolthread.s
+
+# target to generate assembly for a file
+servocontrolthread.cpp.s:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/servocontrolthread.cpp.s
+.PHONY : servocontrolthread.cpp.s
+
 socket.o: socket.cpp.o
 .PHONY : socket.o
 
@@ -450,6 +522,9 @@ help:
 	@echo "... carserver.o"
 	@echo "... carserver.i"
 	@echo "... carserver.s"
+	@echo "... inifile.o"
+	@echo "... inifile.i"
+	@echo "... inifile.s"
 	@echo "... lcdscreen.o"
 	@echo "... lcdscreen.i"
 	@echo "... lcdscreen.s"
@@ -465,6 +540,12 @@ help:
 	@echo "... sendthread.o"
 	@echo "... sendthread.i"
 	@echo "... sendthread.s"
+	@echo "... servocontrol.o"
+	@echo "... servocontrol.i"
+	@echo "... servocontrol.s"
+	@echo "... servocontrolthread.o"
+	@echo "... servocontrolthread.i"
+	@echo "... servocontrolthread.s"
 	@echo "... socket.o"
 	@echo "... socket.i"
 	@echo "... socket.s"

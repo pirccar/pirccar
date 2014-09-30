@@ -37,7 +37,7 @@
 #define IMAGE_QUALITY 100
 #define BUFFER_SIZE (MAIN_TEXTURE_WIDTH * MAIN_TEXTURE_HEIGHT)*3
 #define BLOCK_SIZE 2048
-#define IRCAMERA RPI_V2_GPIO_P1_18
+#define IRCAMERA RPI_V2_GPIO_P1_07		// Camera input
 
 bool gotConfig = false;
 bool ready = false;
@@ -222,7 +222,7 @@ int parseMessage(char buf[], int size){
 				if(allow)
 				{
 					//printf("Setting pwm\n");
-					//setPWM(servo, value);
+					setPWM(servo, value);
 					//printf("pwm set done\n");
 				}
 				
@@ -312,6 +312,7 @@ int main()
 	}
 	
 	bcm2835_gpio_fsel(IRCAMERA, BCM2835_GPIO_FSEL_INPT);
+	bcm2835_gpio_set_pud(IRCAMERA,  BCM2835_GPIO_PUD_UP);
 	
 //	PCA9685_init();
 //	printf("Resetting PCA9685\n");
@@ -354,6 +355,7 @@ int main()
 	while(run)
 	{
 //		stopPWM();
+		
 		clientLen = sizeof(clientAddr);
 		
 		if((clientSocket = accept(serverSocket, (sockaddr*) &clientAddr, &clientLen)) < 0)
@@ -469,7 +471,8 @@ int main()
 			}
 			
 			uint8_t val = bcm2835_gpio_lev(IRCAMERA);
-			val = 1; //disable
+			//val = 1; //disable
+			printf("%d\n", val);
 			if(val == 0 && ready) //Detected something, stop throttle 
 			{
 				obstructed = true;

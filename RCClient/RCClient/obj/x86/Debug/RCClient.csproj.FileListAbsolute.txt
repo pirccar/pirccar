@@ -71,3 +71,4 @@ C:\Users\a501639\Documents\GitHub\pirccar\RCClient\RCClient\bin\WindowsGL\Debug\
 C:\Users\a501639\Documents\GitHub\pirccar\RCClient\RCClient\bin\WindowsGL\Debug\MonoGame.Framework.dll
 C:\Users\a501639\Documents\GitHub\pirccar\RCClient\RCClient\bin\WindowsGL\Debug\OpenTK.dll
 C:\Users\a501639\Documents\GitHub\pirccar\RCClient\RCClient\bin\WindowsGL\Debug\Tao.Sdl.dll
+C:\Users\a501639\Documents\GitHub\pirccar\RCClient\RCClient\obj\x86\Debug\RCClient.csprojResolveAssemblyReference.cache

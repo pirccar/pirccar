@@ -1,0 +1,56 @@
+Pin 1 - 3,3volt
+Pin 2 - 5volt
+Pin 3 - i2c SDA
+Pin 4 - 5volt
+Pin 5 - i2c SCL
+Pin 6 - GND
+Pin 7 - GPio 4 - IR-Camera input
+Pin 8 - GPio 14 - UART TX (GPS)
+Pin 9 - GND
+Pin 10 - GPio 15 - UART RX (GPS)
+Pin 11 - GPio 17 - PCD8544 CE
+Pin 12 - GPio 18 - 				Free (PWM)
+Pin 13 - GPio 27 - PCD8544 RST
+Pin 14 - GND
+Pin 15 - GPio 22 - PCD8544 DC
+Pin 16 - GPio 23 - PCD8544 Din
+Pin 17 - 3,3volt
+Pin 18 - GPio 24 - PCD8544 Clk
+Pin 19 - GPio 10 - MCPxxxx MISO
+Pin 20 - GND
+Pin 21 - GPio 9 - MCPxxxx MOSI
+Pin 22 - GPio 25 - 				Free
+Pin 23 - GPio 11 - MCPxxxx CLK
+Pin 24 - GPio 8 - MCPxxxx CS
+Pin 25 - GND
+Pin 26 - GPio 7 - 				Free (SPI CE1)
+
+
+PCA9685
+i2c SDA - GPio 2 - pin 3
+i2c SCL - GPio 3 - pin 5
+
+PCD8544 (LCD)
+CE - GPio 17 - pin 11
+RST - GPio 27 - pin 13
+DC - GPio 22 - pin 15
+Din - GPio 23 - pin 16
+Clk - GPio 24 - pin 18
+
+IR Camera
+Data - GPio 4 - pin 26
+
+MCPxxxx (ADC)
+MOSI - GPio 10 - pin 19
+MISO - GPio 9 - pin 21
+CLK - GPio 11 - pin 23 
+CS - GPio 8 - pin 24
+
+GPS
+TX - GPio 14 - pin 8
+RX - GPio 15  - pin 10
+
+Lediga
+GPio 25 - pin 22
+GPio 18 - pin 12 (PWM)
+GPio 7 - pin 26 (SPI CE1)
