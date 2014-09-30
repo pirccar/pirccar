@@ -1,5 +1,5 @@
-#include "servocontrolthread.h"
 #include <cstdio>
+#include "servocontrolthread.h"
 
 ServoControlThread::ServoControlThread(void)
 : Thread()										//Inherits from Thread
