@@ -89,9 +89,8 @@ namespace RCClient
         bool serverGear = false;
         bool strafe = false;
         bool stabilized = false;
-        float xmin = 1;
+        bool homeCamera = false;
         float[] lxmean;
-        int lxindex = 0;
         int lxmeansize = 10;
 
         bool printDebug = false;
@@ -826,8 +825,13 @@ namespace RCClient
             lx /= lxmeansize;
             */
             //Expo function for steering, smaller inputs are easier to make
-            if (lx >= 0) 
-                lx = (float)Math.Pow(lx, 1.5);
+            
+            //
+            if (lx >= 0)
+            {
+                lx = lx;
+                //lx = (float)Math.Pow(lx, 3.5);
+            }
             else
             {
                 lx *= -1;
@@ -892,8 +896,23 @@ namespace RCClient
             //Reset view, the camera will look straight forward
             if (GamePad.GetState(PlayerIndex.One).Buttons.B == ButtonState.Pressed)
             {
-                servos[cameraXChannel].setMid();
-                servos[cameraYChannel].setMid();
+                if (!homeCamera)
+                    homeCamera = true;
+            }
+
+            if(homeCamera)
+            {
+                Vector2 current = new Vector2(servos[cameraXChannel].getValue(), servos[cameraYChannel].getValue());
+                Vector2 target = new Vector2(320, 320);
+
+                Vector2 set = Vector2.Lerp(current, target, 2.5f * (float)gameTime.ElapsedGameTime.TotalSeconds);
+                if (Vector2.Distance(set, target) <= 5.0f)
+                {
+                    set = target;
+                    homeCamera = false;
+                }
+                servos[cameraXChannel].setValue(set.X);
+                servos[cameraYChannel].setValue(set.Y);
             }
 
             //Reset steering
