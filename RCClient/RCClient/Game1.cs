@@ -586,17 +586,17 @@ namespace RCClient
                         String maps_command = "http://maps.googleapis.com/maps/api/staticmap?center=" + latlng +
                             "&zoom=16&size=" + map_width + "x" + map_height + "&format=" + format + "&maptype=" + maptype + "&markers=color:blue%7Clabel:S%7C" +
                                 latlng + "&sensor=true";
-                        Byte[] raw; //used for the jpeg image from google
+                        Byte[] jpeg; //used for the jpeg image from google
                         Byte[] decomp;
                         try
                         {
-                            raw = wc.DownloadData(maps_command);
+                            jpeg = wc.DownloadData(maps_command);
                         }
                         finally
                         {
                             wc.Dispose();
                         }
-                        decomp = decompressor.Decompress(raw, false); //Decompress the image to a raw rgba format
+                        decomp = decompressor.Decompress(jpeg, false); //Decompress the image to a raw rgba format
                         if (decomp != null)
                         {
                             map.SetData(decomp); //Set the image to the map texture
@@ -962,11 +962,14 @@ namespace RCClient
 
             if (printDebug) //if debug is enable render these values
             {
-                spriteBatch.DrawString(font, x.ToString() + ":" + servos[cameraXChannel].getValue().ToString(), new Vector2(10, 50), Color.White);
-                spriteBatch.DrawString(font, y.ToString() + ":" + servos[cameraYChannel].getValue().ToString(), new Vector2(10, 100), Color.White);
-                spriteBatch.DrawString(font, z.ToString() + ":" + servos[throttleFChannel].getValue().ToString(), new Vector2(10, 150), Color.White);
-                spriteBatch.DrawString(font, lx.ToString() + ":" + servos[steeringFChannel].getValue().ToString() + ":" + servos[steeringBChannel].getValue().ToString(), new Vector2(10, 200), Color.White);
-                spriteBatch.DrawString(font, xmin.ToString(), new Vector2(1124, 650), Color.White);
+                spriteBatch.DrawString(font, "X:" + x.ToString(), new Vector2(800, 50), Color.White);
+                spriteBatch.DrawString(font, "Y:" + y.ToString(), new Vector2(800, 100), Color.White);
+                spriteBatch.DrawString(font, "Z:" + z.ToString(), new Vector2(800, 150), Color.White);
+                spriteBatch.DrawString(font, "LX:" + lx.ToString(), new Vector2(800, 200), Color.White);
+                for (int i = 0; i < servos.Length; i++)
+		        {
+                    spriteBatch.DrawString(font, servos[i].getValue().ToString(), new Vector2(i < 8 ? 10 : 300, 50 + (i < 8 ? i * 50 : (i-8) *50)), Color.White);
+		        }
             }
             //are we strafing?
             spriteBatch.DrawString(font, "Strafe: " + (strafe ? "On" : "Off"), new Vector2(1024, screen_height / 2 - 200), Color.White);

@@ -84,8 +84,8 @@ int parseMessage(char buf[], int size){
 		printf("No data to parse \n");
 		return 0;
 	}
-		
-		
+	//printf("Msg size: %d \n", size);
+	//printf("%s \n", buf);
 	if(buf[0] == 'P'){ // is ping
 		//printf("Got a ping\n");
 		return 1;
@@ -166,8 +166,9 @@ int parseMessage(char buf[], int size){
 	}
 	else if(ready){ //is command S010400 = set servo 1 to 400 off
 		//printf("Got servo data \n");
+		
 		int i = 0;
-		while(i + 7 < size)
+		while(i + 7 <= size)
 		{
 			if(buf[i] == 'S') // servo
 			{
@@ -217,7 +218,11 @@ int parseMessage(char buf[], int size){
 				}
 				//printf("S: %i, V: %i \n", servo, value);
 				if(allow)
-					setPWM(servo, value);
+				{
+					//printf("Setting pwm\n");
+					//setPWM(servo, value);
+					//printf("pwm set done\n");
+				}
 				
 			}
 			i+=7;
@@ -361,6 +366,7 @@ int main()
 			bzero(buffer, 256);
 			int recMsgSize;
 			alarm(recTime);
+			//printf("Looping \n");
 			
 			//printf("Reading message \n");
 			if( (recMsgSize = recv(clientSocket, buffer, 255, 0)) < 0){

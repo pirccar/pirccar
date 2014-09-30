@@ -22,6 +22,7 @@ namespace RCClient
         float value;
         float min;
         float max;
+        int trim;
         ServoType type;
 
         public Servo(int id)
@@ -31,6 +32,7 @@ namespace RCClient
             type = ServoType.Unknown;
             min = 130.0f;
             max = 470.0f;
+            trim = 0;
         }
 
         public void setValue(float value)
@@ -107,7 +109,7 @@ namespace RCClient
 
         public float getValue()
         {
-            return value;
+            return value + trim;
         }
 
         //returns a sendable string containing ID and its value, ready to be sent to server
@@ -119,6 +121,16 @@ namespace RCClient
             msg += s + v;
 
             return msg;
+        }
+
+        public void setTrim(int trim)
+        {
+            this.trim = trim;
+        }
+
+        public int getTrim()
+        {
+            return trim;
         }
     }
 }

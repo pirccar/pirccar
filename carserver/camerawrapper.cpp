@@ -4,6 +4,7 @@ CameraWrapper::CameraWrapper(void)
 {
 	this->width = 320;
 	this->height = 240;
+	this->internalFailCounter = 0;
 	
 	buffer = NULL;
 }
@@ -25,7 +26,9 @@ void CameraWrapper::allocateBuffer()
 void CameraWrapper::initialize()
 {
 	StopCamera();
-	cam = StartCamera(width, height, 30, 1, true);
+	sleep(1);
+	printf("Starting camera \n");
+	cam = StartCamera(width, height, 30, 3, true);
 	
 	allocateBuffer();
 }
@@ -47,10 +50,24 @@ void CameraWrapper::setWidthHeight(int width, int height)
 unsigned char* CameraWrapper::getBuffer()
 {
 	int n = cam->ReadFrame(0,buffer,sizeof(unsigned char)*width*height*4);
-	if(n >0)
+	//printf("ReadFrame ret: %d\n", n);
+	if(n > 0)
+	{
+		internalFailCounter = 0;
 		return buffer;
+	}
 	else
+	{
+		internalFailCounter++;
+		
+		if(internalFailCounter >= 15000)
+		{
+			printf("Triggering camera restart \n");
+			//initialize();
+			internalFailCounter = 0;
+		}
 		return NULL;
+	}
 }
 
 unsigned int CameraWrapper::getWidth()

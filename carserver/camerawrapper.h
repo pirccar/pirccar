@@ -7,6 +7,7 @@ class CameraWrapper
 	private:
 	unsigned char* buffer; //internal buffer for image
 	int width, height; //size of image
+	int internalFailCounter;
 	CCamera* cam;
 	
 	void allocateBuffer(); //allocates memory for the buffer

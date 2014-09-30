@@ -348,7 +348,9 @@ void CCamera::Release()
 	{
 		if(Outputs[i])
 		{
+			printf("Releasing buffer \n");
 			Outputs[i]->Release();
+			printf("Release done\n");
 			delete Outputs[i];
 			Outputs[i] = NULL;
 		}
@@ -477,13 +479,29 @@ error:
 void CCameraOutput::Release()
 {
 	if(OutputQueue)
+	{
+		printf("Deleting queue \n");
 		mmal_queue_destroy(OutputQueue);
+		printf("Done\n");
+	}
 	if(BufferPool)
+	{
+		printf("Deleting bufferpool \n");
 		mmal_port_pool_destroy(BufferPort,BufferPool);
+		printf("Done\n");
+	}
 	if(Connection)
+	{
+		printf("Deleting connection \n");
 		mmal_connection_destroy(Connection);
+		printf("Done\n");
+	}
 	if(ResizerComponent)
+	{
+		printf("Deleting resizer \n");
 		mmal_component_destroy(ResizerComponent);
+		printf("Done\n");
+	}
 	memset(this,0,sizeof(CCameraOutput));
 }
 
@@ -550,7 +568,7 @@ bool CCameraOutput::BeginReadFrame(const void* &out_buffer, int& out_buffer_size
 	//printf("Attempting to read camera output\n");
 
 	//try and get buffer
-	if(MMAL_BUFFER_HEADER_T *buffer = mmal_queue_get(OutputQueue))
+	if(MMAL_BUFFER_HEADER_T *buffer = mmal_queue_wait(OutputQueue))
 	{
 		//printf("Reading buffer of %d bytes from output\n",buffer->length);
 
