@@ -22,6 +22,8 @@
 #include "adcthread.h"
 #include "lcdthread.h"
 #include "sendthread.h"
+#include "servocontrol.h"
+#include "servocontrolthread.h"
 #include <jpeglib.h>
 
 #include "pca9685.h"
@@ -245,7 +247,12 @@ void setup_alarm_handler() {
 //Stop all PWM channels
 void stopPWM()
 {
-	for(int i = 1; i < 17; i++)
+	ServoControl kalle;			//Instantiate ServoControl
+	
+	kalle.start();				//Run start function
+
+//--- Old stuff
+	/*	for(int i = 1; i < 17; i++)
 	{
 		if(i == throttleFChannel)
 		{
@@ -268,6 +275,8 @@ void stopPWM()
 			printf("Stopping (320) channel %d, Unknown\n", i);
 		}
 	}	
+*/
+//------------
 }
 
 //Main!
@@ -290,6 +299,7 @@ int main()
 	LcdThread* lcd = new LcdThread();
 	SendThread* sendThread = new SendThread();
 	AdcThread* adc = new AdcThread(lcd, sendThread);
+	ServoControlThread* servo = new ServoControlThread();
 	
 	if(!bcm2835_init()){
 		printf("BCM error \n");
@@ -298,13 +308,12 @@ int main()
 	
 	bcm2835_gpio_fsel(IRCAMERA, BCM2835_GPIO_FSEL_INPT);
 	
-	PCA9685_init();
+//	PCA9685_init();
+//	printf("Resetting PCA9685\n");
+//	PCA9685_reset();
+//	setPWMFreq(50);
 	
-	printf("Resetting PCA9685\n");
-	PCA9685_reset();
-	
-	setPWMFreq(50);
-	
+	servo->start();
 	adc->start();
 	lcd->start();
 	
@@ -339,7 +348,7 @@ int main()
 	
 	while(run)
 	{
-		stopPWM();
+//		stopPWM();
 		clientLen = sizeof(clientAddr);
 		
 		if((clientSocket = accept(serverSocket, (sockaddr*) &clientAddr, &clientLen)) < 0)
@@ -366,6 +375,7 @@ int main()
 			if( (recMsgSize = recv(clientSocket, buffer, 255, 0)) < 0){
 				printf("Recv failed \n"); //Indicates that it took more than 1 second to get a message from the client, bad connection
 				stopPWM();
+
 				alarm(0);
 				recTime = 10; //Increase recv timer to 10 seconds
 				stabilized = false;
