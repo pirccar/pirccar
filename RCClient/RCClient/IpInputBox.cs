@@ -34,6 +34,8 @@ namespace RCClient
     {
         String text;
         bool selected;
+        bool showThing;
+        double timeCheck;
         int width;
         Vector2 position;
         SpriteFont font;
@@ -45,6 +47,8 @@ namespace RCClient
         {
             text = null;
             selected = false;
+            showThing = false;
+            timeCheck = 0.0f;
             width = 100;
             position = Vector2.Zero;
             font = null;
@@ -197,6 +201,14 @@ namespace RCClient
                 }
             }
 
+            timeCheck += gameTime.ElapsedGameTime.TotalSeconds;
+
+            if(timeCheck >= 1.0)
+            {
+                timeCheck -= 1.0;
+                showThing = !showThing;
+            }
+
             prevState = keyState;
         }
 
@@ -208,7 +220,7 @@ namespace RCClient
                 {
                     spriteBatch.Draw(texture, new Rectangle((int)position.X, (int)position.Y, width, font.LineSpacing), Color.White);
                     if(text != null)
-                        spriteBatch.DrawString(font, text, position, Color.Black);
+                        spriteBatch.DrawString(font, text + ((showThing && selected) ? "|" : ""), position, Color.Black);
                 }
                 else
                 {

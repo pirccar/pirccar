@@ -30,8 +30,6 @@ namespace RCClient
         SpriteBatch spriteBatch;
         Socket_Connection connection;
         SpriteFont font;
-        KeyboardState prevState;
-        GamePadState prevPadState;
         
         //Map
         Texture2D map;
@@ -79,6 +77,7 @@ namespace RCClient
         double recTime = 0.0;
         
         //control values
+        Input input;
         float x;
         float y;
         float z;
@@ -148,6 +147,7 @@ namespace RCClient
             connection = new Socket_Connection(fpv_texture_width, fpv_texture_height); //ourgoíng socket
             readThread = new ReadThread(ip, fpv_texture_width, fpv_texture_height, false); //readthread with internal incoming socket
             thread = new Thread(new ThreadStart(readThread.Run)); //thread for readthread
+            input = new Input();
 
             servos = new Servo[16]; //servo values
             prevServos = new Servo[16]; //old servo values
@@ -636,164 +636,73 @@ namespace RCClient
                 }
             }
         }
-
-        //updates user input
-        protected override void Update(GameTime gameTime)
+        
+        //Connect to a carserver
+        private void connect()
         {
-            GamePadState padState = GamePad.GetState(PlayerIndex.One, GamePadDeadZone.IndependentAxes);
-            KeyboardState state = Keyboard.GetState();
+            bool useInputIp = false;
+            String ipinput = ipInputbox.GetText();
 
-            //Toggle the menu
-            if ((padState.Buttons.Back == ButtonState.Pressed && prevPadState.Buttons.Back == ButtonState.Released)
-                || (state.IsKeyDown(Keys.Escape) && prevState.IsKeyUp(Keys.Escape)))
+            //Parse the ip that the user entered
+            if (ipinput != null)
             {
-                menu.Toggle();
-
-            }
-
-            //Exit application
-            if (menu.GetQuit())
-            {
-                if (thread.IsAlive) //Kill the readthread if its alive
+                if (ipinput.Length > 7 && ipinput.Length < 16)
                 {
-                    readThread.kill();
-                    if (connection.isConnected())
-                        connection.disconnect();
-                    //thread.Abort();
-                    thread.Join();
-                }
-
-                SaveConfig(); //Save config
-                Exit();
-            }
-
-            //Connect
-            if ((state.IsKeyDown(Keys.Enter) && prevState.IsKeyUp(Keys.Enter)) || padState.Buttons.Start == ButtonState.Pressed && prevPadState.Buttons.Start == ButtonState.Released)
-            {
-                bool useInputIp = false;
-                String ipinput = ipInputbox.GetText();
-                
-                //Parse the ip that the user entered
-                if (ipinput != null)
-                {
-                    if (ipinput.Length > 7 && ipinput.Length < 16)
+                    try
                     {
-                        try
-                        {
-                            int first, second, third;
-                            first = second = third = -1;
-                            first = ipinput.IndexOfAny(".".ToCharArray());
-                            second = ipinput.IndexOfAny(".".ToCharArray(), first + 1, 4);
-                            third = ipinput.IndexOfAny(".".ToCharArray(), second + 1, 4);
-                            if (first > 0 && second > first && third > second)
-                                useInputIp = true;
-                            else
-                                System.Windows.Forms.MessageBox.Show("Invalid IPV4 adress", "Oh Noes!");
-                        }
-                        catch (Exception e)
-                        {
+                        int first, second, third;
+                        first = second = third = -1;
+                        first = ipinput.IndexOfAny(".".ToCharArray());
+                        second = ipinput.IndexOfAny(".".ToCharArray(), first + 1, 4);
+                        third = ipinput.IndexOfAny(".".ToCharArray(), second + 1, 4);
+                        if (first > 0 && second > first && third > second)
+                            useInputIp = true;
+                        else
                             System.Windows.Forms.MessageBox.Show("Invalid IPV4 adress", "Oh Noes!");
-                        }
+                    }
+                    catch (Exception e)
+                    {
+                        System.Windows.Forms.MessageBox.Show("Invalid IPV4 adress", "Oh Noes!");
                     }
                 }
-
-                parseConfigBoxes(); //Check config boxes for servo location
-                ip = ipinput;
-
-                if (!thread.IsAlive) //If readthread is not alive then start it!
-                {
-                    readThread = new ReadThread(ip, fpv_texture_width, fpv_texture_height, fpv_texture_width > 256 ? false : true);
-                    thread = new Thread(new ThreadStart(readThread.Run));
-                    thread.Start();
-                }
-                else if (!connection.isConnected()) //But if the thread is alive and we aren't connected
-                {
-                    readThread.kill(); //kill the readthread
-                    thread.Join(500); //wait for it to die
-
-                    //And start it again
-                    readThread = new ReadThread(ip, fpv_texture_width, fpv_texture_height, fpv_texture_width > 256 ? false : true);
-                    thread = new Thread(new ThreadStart(readThread.Run));
-                    thread.Start();
-                }
-                //Else we dont do anything
-
-                if (useInputIp)
-                    connection.connect(ipinput, 8001);
-
-                sendConfig(); //send the config
             }
 
-            //Disconnect
-            if(menu.GetDisconnect())
+            parseConfigBoxes(); //Check config boxes for servo location
+            ip = ipinput;
+
+            if (!thread.IsAlive) //If readthread is not alive then start it!
             {
-                if (thread.IsAlive) //Kill the read thread
-                {
-                    readThread.kill();
-                    thread.Join();
-                }
-                if (connection.isConnected())
-                    connection.disconnect(); //disconnect the outgoing connectiong
-
-                stabilized = false;
-
-                SaveConfig(); //Save config
+                readThread = new ReadThread(ip, fpv_texture_width, fpv_texture_height, fpv_texture_width > 256 ? false : true);
+                thread = new Thread(new ThreadStart(readThread.Run));
+                thread.Start();
             }
-
-            //imageQuality, change it localy and send the new value to the server
-            if ((padState.DPad.Up == ButtonState.Pressed && prevPadState.DPad.Up == ButtonState.Released) || 
-                (state.IsKeyDown(Keys.I) && prevState.IsKeyUp(Keys.I)))
+            else if (!connection.isConnected()) //But if the thread is alive and we aren't connected
             {
-                imageQuality += 5;
-                if (imageQuality > 90)
-                    imageQuality = 90;
-                sendConfig();
-            }
-            if ((padState.DPad.Down == ButtonState.Pressed && prevPadState.DPad.Down == ButtonState.Released) ||
-                (state.IsKeyDown(Keys.K) && prevState.IsKeyUp(Keys.K)))
-            {
-                imageQuality -= 5;
-                if (imageQuality < 1)
-                    imageQuality = 1;
-                sendConfig();
-            }
+                readThread.kill(); //kill the readthread
+                thread.Join(500); //wait for it to die
 
-            //Servos, used to chane servo config with the controller
-            if (!connection.isConnected())
-            {
-                if (padState.DPad.Right == ButtonState.Pressed && prevPadState.DPad.Right == ButtonState.Released)
-                {
-                    servoBoxes.ForwardSelection();
-                }
-                if (padState.DPad.Left == ButtonState.Pressed && prevPadState.DPad.Left == ButtonState.Released)
-                {
-                    servoBoxes.BackwardSelection();
-                }
+                //And start it again
+                readThread = new ReadThread(ip, fpv_texture_width, fpv_texture_height, fpv_texture_width > 256 ? false : true);
+                thread = new Thread(new ThreadStart(readThread.Run));
+                thread.Start();
             }
+            //Else we dont do anything
 
-            //Gear, toggles the gear state between Drive and Reverse
-            if (padState.Buttons.A == ButtonState.Pressed && prevPadState.Buttons.A == ButtonState.Released)
-            {
-                gear = !gear;
-                if (gear)
-                    servos[gearChannel].setOn();
-                else
-                    servos[gearChannel].setOff();
-            }
+            if (useInputIp)
+                connection.connect(ipinput, 8001);
 
-            //Strafe, the car turns with both sets of wheels, making it able to strafe...
-            if (padState.Buttons.LeftStick == ButtonState.Pressed && prevPadState.Buttons.LeftStick == ButtonState.Released)
-            {
-                strafe = !strafe;
-            }
+            sendConfig(); //send the config
+        }
 
+        //check input values from controller and set servo values
+        private void setServos(GameTime gameTime)
+        {
             //grab controller values
-            x = -padState.ThumbSticks.Right.X; //used for camera panning
-            y = -padState.ThumbSticks.Right.Y; //used for camera tilting
-            z = padState.Triggers.Right; //used for throttle
+            x = -input.getRightStick().X;
+            y = -input.getRightStick().Y; //used for camera tilting
+            z = input.getRightTrigger(); //used for throttle
 
-            padState.ThumbSticks.Left.Normalize();
-            lx = padState.ThumbSticks.Left.X; //used for steering
+            lx = input.getLeftStick().X; //used for steering
 
             /*
             if (lx > 0 && lx < xmin)
@@ -825,7 +734,7 @@ namespace RCClient
             lx /= lxmeansize;
             */
             //Expo function for steering, smaller inputs are easier to make
-            
+
             //
             if (lx >= 0)
             {
@@ -867,9 +776,88 @@ namespace RCClient
                 servos[steeringBChannel].setValue(MathHelper.Clamp(320.0f + (lx * 48.0f), servos[steeringBChannel].getMin(), servos[steeringBChannel].getMax())); //steering 2
             servos[throttleFChannel].setValue(MathHelper.Lerp(servos[throttleFChannel].getMin(), maxSpeed, z)); //throttle
             servos[throttleBChannel].setValue(MathHelper.Lerp(servos[throttleBChannel].getMin(), maxSpeed, z));
+        }
+
+        private void checkInput()
+        {
+            //Toggle the menu
+            if (input.buttonDown(Buttons.Back) || input.keyDown(Keys.Escape))
+            {
+                menu.Toggle();
+            }
+
+            //Exit application
+            if (menu.GetQuit())
+            {
+                if (thread.IsAlive) //Kill the readthread if its alive
+                {
+                    readThread.kill();
+                    if (connection.isConnected())
+                        connection.disconnect();
+                    //thread.Abort();
+                    thread.Join();
+                }
+
+                SaveConfig(); //Save config
+                Exit();
+            }
+
+            //Connect
+            if (input.keyDown(Keys.Enter) || input.buttonDown(Buttons.Start))
+            {
+                connect();
+            }
+
+            //Disconnect
+            if (menu.GetDisconnect())
+            {
+                if (thread.IsAlive) //Kill the read thread
+                {
+                    readThread.kill();
+                    thread.Join();
+                }
+                if (connection.isConnected())
+                    connection.disconnect(); //disconnect the outgoing connectiong
+
+                stabilized = false;
+
+                SaveConfig(); //Save config
+            }
+
+            //imageQuality, change it localy and send the new value to the server
+            if (input.buttonDown(Buttons.DPadUp) || input.keyDown(Keys.I))
+            {
+                imageQuality += 5;
+                if (imageQuality > 90)
+                    imageQuality = 90;
+                sendConfig();
+            }
+            if (input.buttonDown(Buttons.DPadDown) || input.keyDown(Keys.K))
+            {
+                imageQuality -= 5;
+                if (imageQuality < 1)
+                    imageQuality = 1;
+                sendConfig();
+            }
+
+            //Gear, toggles the gear state between Drive and Reverse
+            if (input.buttonDown(Buttons.A))
+            {
+                gear = !gear;
+                if (gear)
+                    servos[gearChannel].setOn();
+                else
+                    servos[gearChannel].setOff();
+            }
+
+            //Strafe, the car turns with both sets of wheels, making it able to strafe...
+            if (input.buttonDown(Buttons.LeftStick))
+            {
+                strafe = !strafe;
+            }
 
             //speedLimiter, very useful for driving slow.. or very very fast
-            if (padState.Buttons.Y == ButtonState.Pressed && prevPadState.Buttons.Y == ButtonState.Released)
+            if (input.buttonDown(Buttons.Y))
             {
                 speedLimiter++;
                 if (speedLimiter > 3)
@@ -888,17 +876,36 @@ namespace RCClient
             }
 
             //Send config, this should become an automated process on connect (it is now)
-            if (padState.Buttons.X == ButtonState.Pressed && prevPadState.Buttons.X == ButtonState.Released)
+            if (input.buttonDown(Buttons.X))
             {
                 sendConfig();
             }
 
             //Reset view, the camera will look straight forward
-            if (GamePad.GetState(PlayerIndex.One).Buttons.B == ButtonState.Pressed)
+            if (input.buttonDown(Buttons.B))
             {
                 if (!homeCamera)
                     homeCamera = true;
             }
+
+            //Reset steering
+            if (input.buttonDown(Buttons.LeftShoulder))
+            {
+                servos[steeringFChannel].setMid();
+                servos[steeringBChannel].setMid();
+            }
+
+            //Enable debug test
+            if (input.keyDown(Keys.D))
+                printDebug = !printDebug;
+        }
+
+        //updates user input
+        protected override void Update(GameTime gameTime)
+        {
+            input.update();
+
+            checkInput();
 
             if(homeCamera)
             {
@@ -915,16 +922,8 @@ namespace RCClient
                 servos[cameraYChannel].setValue(set.Y);
             }
 
-            //Reset steering
-            if (padState.Buttons.LeftShoulder == ButtonState.Pressed)
-            {
-                servos[steeringFChannel].setMid();
-                servos[steeringBChannel].setMid();
-            }
-
-
-            if (state.IsKeyDown(Keys.D) && prevState.IsKeyUp(Keys.D))
-                printDebug = !printDebug;
+            //Set servo values from input
+            setServos(gameTime);
 
             //send input to server
             sendAndAck(gameTime);
@@ -951,10 +950,6 @@ namespace RCClient
             }
 
             menu.Update();
-
-            //save old state of controller and keyboard
-            prevState = state;
-            prevPadState = padState;
             base.Update(gameTime);
         }
 
