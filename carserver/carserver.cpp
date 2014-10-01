@@ -24,6 +24,7 @@
 #include "sendthread.h"
 #include "servocontrol.h"
 #include "servocontrolthread.h"
+#include "musicThread.h"
 #include <jpeglib.h>
 
 #include "pca9685.h"
@@ -44,6 +45,7 @@ bool ready = false;
 bool obstructed = false;
 bool globalConnected = false;
 char *frameIP;
+MusicThread* music;
 
 int imageWidth;
 int imageHeight;
@@ -165,6 +167,10 @@ int parseMessage(char buf[], int size){
 		
 		printf("Config was received \n");
 		gotConfig = true;
+	}
+	else if(buf[0] == 'M')
+	{
+		music->play();
 	}
 	else if(ready){ //is command S010400 = set servo 1 to 400 off
 		//printf("Got servo data \n");
@@ -305,6 +311,7 @@ int main()
 	SendThread* sendThread = new SendThread();
 	AdcThread* adc = new AdcThread(lcd, sendThread);
 	ServoControlThread* servo = new ServoControlThread();
+	music = new MusicThread();
 	
 	if(!bcm2835_init()){
 		printf("BCM error \n");
@@ -322,6 +329,7 @@ int main()
 	servo->start();
 	adc->start();
 	lcd->start();
+	music->start();
 	
 	serverPort = 8001;
 	
@@ -472,7 +480,7 @@ int main()
 			
 			uint8_t val = bcm2835_gpio_lev(IRCAMERA);
 			//val = 1; //disable
-			printf("%d\n", val);
+			//printf("%d\n", val);
 			if(val == 0 && ready) //Detected something, stop throttle 
 			{
 				obstructed = true;
@@ -494,6 +502,7 @@ int main()
 	lcd->stop();
 	adc->stop();
 	sendThread->stop();
+	music->stop();
 	//pthread_join(lcd_thread, NULL);
 	printf("Shutting down \n");
 	delete[] frameIP;

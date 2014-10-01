@@ -39,10 +39,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/pi/public/pirccar/carserver
+CMAKE_SOURCE_DIR = /home/pi/carserver
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/pi/public/pirccar/carserver
+CMAKE_BINARY_DIR = /home/pi/carserver
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -69,9 +69,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/pi/public/pirccar/carserver/CMakeFiles /home/pi/public/pirccar/carserver/CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/pi/carserver/CMakeFiles /home/pi/carserver/CMakeFiles/progress.marks
 	$(MAKE) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/pi/public/pirccar/carserver/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/pi/carserver/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -327,6 +327,30 @@ lcdthread.cpp.s:
 	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/lcdthread.cpp.s
 .PHONY : lcdthread.cpp.s
 
+musicThread.o: musicThread.cpp.o
+.PHONY : musicThread.o
+
+# target to build an object file
+musicThread.cpp.o:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/musicThread.cpp.o
+.PHONY : musicThread.cpp.o
+
+musicThread.i: musicThread.cpp.i
+.PHONY : musicThread.i
+
+# target to preprocess a source file
+musicThread.cpp.i:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/musicThread.cpp.i
+.PHONY : musicThread.cpp.i
+
+musicThread.s: musicThread.cpp.s
+.PHONY : musicThread.s
+
+# target to generate assembly for a file
+musicThread.cpp.s:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/musicThread.cpp.s
+.PHONY : musicThread.cpp.s
+
 pca9685.o: pca9685.cpp.o
 .PHONY : pca9685.o
 
@@ -531,6 +555,9 @@ help:
 	@echo "... lcdthread.o"
 	@echo "... lcdthread.i"
 	@echo "... lcdthread.s"
+	@echo "... musicThread.o"
+	@echo "... musicThread.i"
+	@echo "... musicThread.s"
 	@echo "... pca9685.o"
 	@echo "... pca9685.i"
 	@echo "... pca9685.s"

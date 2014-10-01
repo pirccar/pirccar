@@ -89,6 +89,7 @@ namespace RCClient
         bool strafe = false;
         bool stabilized = false;
         bool homeCamera = false;
+        bool playSong = false;
         float[] lxmean;
         int lxmeansize = 10;
 
@@ -854,6 +855,11 @@ namespace RCClient
             if (input.buttonDown(Buttons.LeftStick))
             {
                 strafe = !strafe;
+            }
+
+            if (input.buttonDown(Buttons.RightShoulder))
+            {
+                connection.send("M");
             }
 
             //speedLimiter, very useful for driving slow.. or very very fast

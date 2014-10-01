@@ -11,6 +11,6 @@ include_directories(/usr/local/include)
 include_directories(/home/pi/public/rccar)
 link_directories(/opt/vc/lib)
 link_directories(/usr/local/lib)
-add_executable(carserver carserver.cpp PCD8544.c rs232.c pca9685.cpp camera.cpp cameracontrol.cpp camerawrapper.cpp lcdscreen.cpp socket.cpp thread.cpp adcthread.cpp lcdthread.cpp sendthread.cpp servocontrol.cpp servocontrolthread.cpp inifile.cpp)
+add_executable(carserver carserver.cpp PCD8544.c rs232.c pca9685.cpp camera.cpp cameracontrol.cpp camerawrapper.cpp lcdscreen.cpp musicThread.cpp socket.cpp thread.cpp adcthread.cpp lcdthread.cpp sendthread.cpp servocontrol.cpp servocontrolthread.cpp inifile.cpp)
 
 target_link_libraries(carserver libpthread.so librt.so libjpeg.so libmmal_core.so libmmal_util.so libmmal_vc_client.so libvcos.so libbcm_host.so libbcm2835.a wiringPi GLESv2 EGL ${OpenCV_LIBS})
