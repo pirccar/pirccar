@@ -1,6 +1,5 @@
 #include "musicThread.h"
 
-#define SPEAKER RPI_GPIO_P1_26
 
 MusicThread::MusicThread(void)
 : Thread()
@@ -15,12 +14,43 @@ void MusicThread::mainLoop(void)
 		playSong();
 		playTrigger = false;
 	}
+	
+	struct timeval start, end;
+	long mtime, seconds, useconds;
+	bcm2835_gpio_write(TRIGGER, LOW);
 	sleep(2);
+	bcm2835_gpio_write(TRIGGER, HIGH);
+	bcm2835_delayMicroseconds(10);
+	bcm2835_gpio_write(TRIGGER, LOW);
+	
+	while(bcm2835_gpio_lev(ECH) == LOW);
+	
+	gettimeofday(&start, NULL);
+	while(bcm2835_gpio_lev(ECH) == HIGH);
+	gettimeofday(&end, NULL);
+	
+	seconds = end.tv_sec - start.tv_sec;
+	useconds = end.tv_usec - start.tv_usec;
+	
+	printf("Seconds: %ld \n", seconds);
+	printf("Micros: %ld \n", useconds);
+	
+	mtime = ((seconds) * 1000 + useconds) +0.5;
+	
+	double totSec = seconds + useconds / 1000000.0;
+	
+	printf("totsec: %d \n", totSec);
+	float distance = (totSec * 17150);
+	
+	printf("Distance: %f cm\n", distance);
 }
 
 void MusicThread::init(void)
 {
 	bcm2835_gpio_fsel(SPEAKER, BCM2835_GPIO_FSEL_OUTP);
+	bcm2835_gpio_fsel(TRIGGER, BCM2835_GPIO_FSEL_OUTP);
+	bcm2835_gpio_fsel(ECH, BCM2835_GPIO_FSEL_INPT);
+	//bcm2835_gpio_set_pud(ECH, BCM2835_GPIO_PUD_UP);
 	playTrigger = false;
 }
 
@@ -87,7 +117,7 @@ void MusicThread::playSong()
 	for(int i = 0; i < songLength; i++)
 	{
 		int duration = glassB[i] * 10000;
-		//printf("%d : %d, D: %d \n", i, glassB[i], duration);
+		printf("%d : %d, D: %d \n", i, glassB[i], duration);
 		playTone(glassN[i], duration);
 		bcm2835_delay(10);
 	}

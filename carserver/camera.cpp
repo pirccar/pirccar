@@ -344,6 +344,16 @@ error:
 
 void CCamera::Release()
 {
+
+	
+	if(VidToSplitConn)
+		mmal_connection_destroy(VidToSplitConn);
+	if(CameraComponent)
+		mmal_component_destroy(CameraComponent);
+	if(SplitterComponent)
+		mmal_component_destroy(SplitterComponent);
+	
+/*	
 	for(int i = 0; i < 4; i++)
 	{
 		if(Outputs[i])
@@ -354,13 +364,7 @@ void CCamera::Release()
 			delete Outputs[i];
 			Outputs[i] = NULL;
 		}
-	}
-	if(VidToSplitConn)
-		mmal_connection_destroy(VidToSplitConn);
-	if(CameraComponent)
-		mmal_component_destroy(CameraComponent);
-	if(SplitterComponent)
-		mmal_component_destroy(SplitterComponent);
+	}*/
 	VidToSplitConn = NULL;
 	CameraComponent = NULL;
 	SplitterComponent = NULL;

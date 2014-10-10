@@ -98,7 +98,7 @@ int getPWMOn(uint8_t led){
 int getPWMOff(uint8_t led){
 	int val = 0;
 	char buf[MAX_LEN];
-	char addr = LED0_OFF_H + LED_MULTIPLYER * (led-1);;
+	char addr = LED0_OFF_H + LED_MULTIPLYER * (led-1);
 	
 	bcm2835_i2c_read_register_rs((char*)&addr, (char*)&buf, 1);
 	

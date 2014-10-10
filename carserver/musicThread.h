@@ -2,9 +2,12 @@
 #include <bcm2835.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <sys/time.h>
 #include "thread.h"
 
 #define SPEAKER RPI_GPIO_P1_26
+#define TRIGGER RPI_BPLUS_GPIO_J8_37
+#define ECH 	RPI_BPLUS_GPIO_J8_38
 
 class MusicThread : public Thread
 {

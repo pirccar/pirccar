@@ -41,8 +41,8 @@ namespace RCClient
         //Resolutions
         int screen_width = 1600;
         int screen_height = 768;
-        int fpv_texture_width = 256;
-        int fpv_texture_height = 256;
+        int fpv_texture_width = 128;
+        int fpv_texture_height = 128;
         int imageQuality = 75;
         int map_width = 256;
         int map_height = 256;

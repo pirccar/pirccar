@@ -28,7 +28,7 @@ void CameraWrapper::initialize()
 	StopCamera();
 	sleep(1);
 	printf("Starting camera \n");
-	cam = StartCamera(width, height, 30, 3, true);
+	cam = StartCamera(width, height, 40, 1, true);
 	
 	allocateBuffer();
 }
