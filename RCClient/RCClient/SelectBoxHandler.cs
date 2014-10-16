@@ -25,8 +25,7 @@ namespace RCClient
         public void LoadDefaults()
         {
             selectables.AddLast("None");
-            selectables.AddLast("Throttle Front");
-            selectables.AddLast("Throttle Back");
+            selectables.AddLast("Throttle");
             selectables.AddLast("Steering Front");
             selectables.AddLast("Steering Back");
             selectables.AddLast("Camera X");

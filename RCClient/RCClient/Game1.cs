@@ -52,8 +52,7 @@ namespace RCClient
         int cameraYChannel = 1;
         int steeringFChannel = 4;
         int steeringBChannel = 5;
-        int throttleFChannel = 2;
-        int throttleBChannel = 3;
+        int throttleChannel = 3;
         int gearChannel = 7;
         SelectBoxHandler servoBoxes;
 
@@ -178,8 +177,7 @@ namespace RCClient
             //Set servo types for servos that have a physical limitation
             servos[cameraXChannel].setType(ServoType.Camera);
             servos[cameraYChannel].setType(ServoType.Camera);
-            servos[throttleBChannel].setType(ServoType.Throttle);
-            servos[throttleFChannel].setType(ServoType.Throttle);
+            servos[throttleChannel].setType(ServoType.Throttle);
             servos[steeringFChannel].setType(ServoType.Steering);
             servos[steeringBChannel].setType(ServoType.Steering);
 
@@ -274,14 +272,13 @@ namespace RCClient
         //send client config to server
         private void sendConfig()
         {
-            String throttleF = String.Format("{0:00}", throttleFChannel+1); //let the server know which channel is the FThrottle
-            String throttleB = String.Format("{0:00}", throttleBChannel + 1); //let the server know which channel is the BThrottle
-            String gear = String.Format("{0:00}", gearChannel+1);// let the server know which channel is the gear channel
+            String throttle = String.Format("{0:00}", throttleChannel); //let the server know which channel is the FThrottle
+            String gear = String.Format("{0:00}", gearChannel);// let the server know which channel is the gear channel
             String width = String.Format("{0:0000}", fpv_texture_width); //let server know at what size to capture the image
             String height = String.Format("{0:0000}", fpv_texture_height);//let server know at what size to capture the image
             String quality = String.Format("{0:000}", imageQuality); //And compress to what quality?
             String udp = String.Format("{0:0}", fpv_texture_width > 256 ? 0 : 1); //And should the server use udp or tcp for sending data?
-            String send = "C" + throttleF + throttleB + gear + width + height + quality + udp;
+            String send = "C" + throttle + gear + width + height + quality + udp;
             connection.send(send); //Send the config string to the server
         }
 
@@ -293,9 +290,7 @@ namespace RCClient
                 String val = servoBoxes.GetBoxValue(i);
 
                 if (val.CompareTo("Throttle Front") == 0)
-                    throttleFChannel = i;
-                else if (val.CompareTo("Throttle Back") == 0)
-                    throttleBChannel = i;
+                    throttleChannel = i;
                 else if (val.CompareTo("Steering Front") == 0)
                     steeringFChannel = i;
                 else if (val.CompareTo("Steering Back") == 0)
@@ -406,6 +401,7 @@ namespace RCClient
             //just send if we are connected
             if (connection.isConnected())
             {
+                //Thread.Sleep(4000);
                 if (nSent > 0 && stabilized) //If we need to send anything and the connection is stable
                 {
                     connection.send(msg);
@@ -775,8 +771,7 @@ namespace RCClient
                 servos[steeringBChannel].setValue(MathHelper.Clamp(320.0f + ((lx * -1) * 48.0f), servos[steeringBChannel].getMin(), servos[steeringBChannel].getMax())); //steering 2
             else
                 servos[steeringBChannel].setValue(MathHelper.Clamp(320.0f + (lx * 48.0f), servos[steeringBChannel].getMin(), servos[steeringBChannel].getMax())); //steering 2
-            servos[throttleFChannel].setValue(MathHelper.Lerp(servos[throttleFChannel].getMin(), maxSpeed, z)); //throttle
-            servos[throttleBChannel].setValue(MathHelper.Lerp(servos[throttleBChannel].getMin(), maxSpeed, z));
+            servos[throttleChannel].setValue(MathHelper.Lerp(servos[throttleChannel].getMin(), maxSpeed, z)); //throttle
         }
 
         private void checkInput()
