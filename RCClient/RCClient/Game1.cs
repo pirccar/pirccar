@@ -164,13 +164,13 @@ namespace RCClient
 
             //setup servos to default value
             for (int i = 0; i < 16; i++)
-                servos[i] = new Servo(i+1);
+                servos[i] = new Servo(i);
 
             //set every servo to the middle position
             for (int i = 0; i < 16; i++)
             {
                 servos[i].setMid();
-                prevServos[i] = new Servo(i + 1);
+                prevServos[i] = new Servo(i);
                 prevServos[i].setValue(servos[i].getValue());
             }
 
@@ -386,12 +386,7 @@ namespace RCClient
 
             for (int i = 0; i < 16; i++)
             {
-                if (i == gearChannel) //we've had some problems with the gear not changing on input, so we spam this to the server
-                {
-                    msg += servos[i].getMessage();
-                    nSent++;
-                }
-                else if (servos[i].getValue() != prevServos[i].getValue()) //Just send servo values that have changed since the last time we checked
+                if (servos[i].getValue() != prevServos[i].getValue()) //Just send servo values that have changed since the last time we checked
                 {
                     msg += servos[i].getMessage();
                     nSent++;
