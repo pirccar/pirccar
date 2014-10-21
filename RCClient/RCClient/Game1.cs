@@ -117,11 +117,6 @@ namespace RCClient
         //Screenshot
         Texture2D screen;
         RenderTarget2D renderTarget;
-       
-        //SimCar
-        SimCar simCar;
-        RenderTarget2D simCarTarget;
-        Texture2D simCarTexture;
 
         //Read thread
         ReadThread readThread;
@@ -262,14 +257,11 @@ namespace RCClient
             menu.LoadContent(GraphicsDevice, Content);
 
             //Used for testing
-            testTexture = new TextureColor(GraphicsDevice, Color.White);
-
-            simCar = new SimCar(new Vector2(0, 0), testTexture);
+            testTexture = new TextureColor(GraphicsDevice, Color.Red);
 
             //This might have been used for an old screenshot method.... don't touch it
             PresentationParameters pp = GraphicsDevice.PresentationParameters;
             renderTarget = new RenderTarget2D(GraphicsDevice, pp.BackBufferWidth, pp.BackBufferHeight, false, GraphicsDevice.DisplayMode.Format, DepthFormat.None, pp.MultiSampleCount, RenderTargetUsage.DiscardContents);
-            simCarTarget = new RenderTarget2D(GraphicsDevice, pp.BackBufferWidth, pp.BackBufferHeight, false, GraphicsDevice.DisplayMode.Format, DepthFormat.None, pp.MultiSampleCount, RenderTargetUsage.DiscardContents);
         }
 
         protected override void UnloadContent()
@@ -282,13 +274,11 @@ namespace RCClient
         {
             String throttle = String.Format("{0:00}", throttleChannel); //let the server know which channel is the FThrottle
             String gear = String.Format("{0:00}", gearChannel);// let the server know which channel is the gear channel
-            String steeringF = String.Format("{0:00}", steeringFChannel);
-            String steeringB = String.Format("{0:00}", steeringBChannel);
             String width = String.Format("{0:0000}", fpv_texture_width); //let server know at what size to capture the image
             String height = String.Format("{0:0000}", fpv_texture_height);//let server know at what size to capture the image
             String quality = String.Format("{0:000}", imageQuality); //And compress to what quality?
             String udp = String.Format("{0:0}", fpv_texture_width > 256 ? 0 : 1); //And should the server use udp or tcp for sending data?
-            String send = "C" + throttle + gear + steeringF + steeringB + width + height + quality + udp;
+            String send = "C" + throttle + gear + width + height + quality + udp;
             connection.send(send); //Send the config string to the server
         }
 
@@ -605,29 +595,6 @@ namespace RCClient
                     }
                     prevLatlng = latlng;
                 }
-                else if (data.Length < 100 && data[0] == 'H' && data[1] == 'O' && data[2] == 'M' && data[3] == 'E')
-                { //Home DATA
-                    String str = System.Text.Encoding.ASCII.GetString(data);
-                    String[] arr = str.Split(':');
-                    if(arr.Length == 4)
-                    {
-                        float dist = float.Parse(arr[1].Replace('.', ','));
-                        int steering = int.Parse(arr[2]);
-                        int gear = int.Parse(arr[3]);
-
-                        simCar.AddState(dist, steering, gear);
-                    }
-                }
-                else if(data.Length < 50 && data[0] == 'C' && data[1] == 'H' && data[2] == 'K')
-                { //checkpoint data
-                    String str = System.Text.Encoding.ASCII.GetString(data);
-                    String[] arr = str.Split(':');
-                    if(arr.Length == 2)
-                    {
-                        int currentCheckpoint = int.Parse(arr[1]);
-                        simCar.SetCurrentCheckpoint(currentCheckpoint);
-                    }
-                }
                 else //it is a frame
                 {
                     Byte[] decomp = decompressor.Decompress(data, true); //decompress the data
@@ -830,7 +797,6 @@ namespace RCClient
             if (input.keyDown(Keys.Enter) || input.buttonDown(Buttons.Start))
             {
                 connect();
-                simCar.Reset();
             }
 
             //Disconnect
@@ -881,11 +847,6 @@ namespace RCClient
                 strafe = !strafe;
             }
 
-            if(input.buttonDown(Buttons.X))
-            {
-                connection.send("GOH");
-            }
-
             if (input.buttonDown(Buttons.RightShoulder))
             {
                 connection.send("M");
@@ -910,6 +871,12 @@ namespace RCClient
                 torqueMeter.SetMax(maxSpeed); //Set the max value of the torque meter
             }
 
+            //Send config, this should become an automated process on connect (it is now)
+            if (input.buttonDown(Buttons.X))
+            {
+                sendConfig();
+            }
+
             //Reset view, the camera will look straight forward
             if (input.buttonDown(Buttons.B))
             {
@@ -927,12 +894,6 @@ namespace RCClient
             //Enable debug test
             if (input.keyDown(Keys.D))
                 printDebug = !printDebug;
-
-            //zoom of simcar camera
-            if (input.keyDown(Keys.OemPlus))
-                simCar.camera.Zoom(1);
-            if (input.keyDown(Keys.OemMinus))
-                simCar.camera.Zoom(-1);
         }
 
         //updates user input
@@ -1061,26 +1022,17 @@ namespace RCClient
             torqueMeter.Draw(spriteBatch);
             speedMeter.Draw(spriteBatch);
 
-            //Draw simcar texture containing lines
-            spriteBatch.Draw(simCarTexture, new Rectangle(1024, (screen_height / 2), screen_width - 1024, (screen_height / 2)), Color.White);
-
             //And the menu
             menu.Draw(spriteBatch);
 
 
             //spriteBatch.Draw(testTexture, new Rectangle(0, 0, screen_width, screen_height), Color.White);
-            spriteBatch.End(); //End the drawing
+            spriteBatch.End(); //End the drawing 
         }
 
         //draw the rendered texture to the screen
         protected override void Draw(GameTime gameTime)
-        { 
-            //Draw simcar to a render target and move the rendertarget to a texture
-            GraphicsDevice.SetRenderTarget(simCarTarget);
-            GraphicsDevice.Clear(Color.Black);
-            simCar.Draw(spriteBatch);
-            simCarTexture = (Texture2D)simCarTarget;
-
+        {
             //Set the graphics engine to draw every drawcall to a texture instead of the screen
             GraphicsDevice.SetRenderTarget(renderTarget);
             GraphicsDevice.Clear(Color.Black);
