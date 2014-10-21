@@ -40,6 +40,7 @@
     <ApplicationIcon>Icon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Camera.cs" />
     <Compile Include="Input.cs" />
     <Compile Include="Menus\Button.cs" />
     <Compile Include="Decompressor.cs" />
@@ -54,9 +55,12 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReadThread.cs" />
+    <Compile Include="ResolutionIndependence\Camera2D.cs" />
+    <Compile Include="ResolutionIndependence\ResolutionIndependentRenderer.cs" />
     <Compile Include="SelectBox.cs" />
     <Compile Include="SelectBoxHandler.cs" />
     <Compile Include="Servo.cs" />
+    <Compile Include="SimCar.cs" />
     <Compile Include="Socket_Connection.cs" />
     <Compile Include="TextureColor.cs" />
   </ItemGroup>
