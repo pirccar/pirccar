@@ -104,7 +104,7 @@ namespace CarSimulator
                 stop = true;
 
             if (stop == false)
-                internalRotation += MathHelper.ToRadians(15.0f) * (goingRight ? 1 : -1) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                internalRotation += MathHelper.ToRadians(45.0f) * (goingRight ? 1 : -1) * (float)gameTime.ElapsedGameTime.TotalSeconds;
         }
 
         public void Draw(SpriteBatch spriteBatch)

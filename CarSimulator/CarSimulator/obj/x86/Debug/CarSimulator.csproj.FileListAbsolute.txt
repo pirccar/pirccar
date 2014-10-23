@@ -24,3 +24,29 @@ c:\users\a501638\documents\visual studio 2013\Projects\CarSimulator\CarSimulator
 c:\users\a501638\documents\visual studio 2013\Projects\CarSimulator\CarSimulator\obj\x86\Debug\CarSimulator.exe
 c:\users\a501638\documents\visual studio 2013\Projects\CarSimulator\CarSimulator\obj\x86\Debug\CarSimulator.pdb
 c:\users\a501638\documents\visual studio 2013\Projects\CarSimulator\CarSimulator\bin\Windows\Debug\Content\SpriteFont1.xnb
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\obj\x86\Debug\CarSimulator.exe
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\obj\x86\Debug\CarSimulator.pdb
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\Content\SpriteFont1.xnb
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\CarSimulator.exe
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\CarSimulator.pdb
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\MonoGame.Framework.dll
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\SharpDX.MediaFoundation.dll
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\SharpDX.dll
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\SharpDX.XAudio2.dll
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\SharpDX.Direct3D11.dll
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\SharpDX.DXGI.dll
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\SharpDX.Direct2D1.dll
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\Lidgren.Network.dll
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\SharpDX.XInput.dll
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\SharpDX.RawInput.dll
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\SharpDX.Direct3D9.dll
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\SharpDX.MediaFoundation.xml
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\SharpDX.xml
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\SharpDX.XAudio2.xml
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\SharpDX.Direct3D11.xml
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\SharpDX.DXGI.xml
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\SharpDX.Direct2D1.xml
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\SharpDX.XInput.xml
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\SharpDX.RawInput.xml
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\bin\Windows\Debug\SharpDX.Direct3D9.xml
+C:\Users\A501638\Documents\GitHub\pirccar\CarSimulator\CarSimulator\obj\x86\Debug\CarSimulator.csprojResolveAssemblyReference.cache

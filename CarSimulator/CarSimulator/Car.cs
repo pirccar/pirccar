@@ -38,9 +38,9 @@ namespace CarSimulator
 
         DistanceSensor sensor;
         List<RealWorldObject> realObjects;
-        Vector2 virtualPosition;
         List<Vector2> virtualWorldPoints;
         List<Line?> virtualWorldLines;
+        Vector2 gotoTarget;
         bool renderRealWorld;
         bool autonomous;
         float travelDistance;
@@ -100,7 +100,6 @@ namespace CarSimulator
             //realObjects.Add(realObject);
             realObject = new RealWorldObject(new Vector2(600, 350), 100, 100, texture);
             //realObjects.Add(realObject);
-            virtualPosition = Vector2.Zero;
             goHomeIndex = -1;
             goHome = false;
         }
@@ -135,7 +134,6 @@ namespace CarSimulator
             goHomeData = new List<ServoTiming>();
             goHomeIndex = -1;
             goHome = false;
-            virtualPosition = Vector2.Zero;
             lineList.Clear();
             virtualWorldPoints.Clear();
             travelDistance = 0.0f;
@@ -317,6 +315,113 @@ namespace CarSimulator
             autonomous = !autonomous;
         }
 
+        public void SetGotoTarget(Vector2 target)
+        {
+            this.gotoTarget = target;
+        }
+
+        private void AutonomousUpdate(GameTime gameTime)
+        {
+            if (false)//(travelDistance >= travelDistanceLimit)
+            {
+                acceleration = 0.0f;
+                if (speed == 0.0f)
+                {
+                    InternalScan(gameTime);
+                }
+            }
+            else
+            {
+                Vector2 dir = new Vector2((float)Math.Cos(rotRad), (float)Math.Sin(rotRad));
+                Vector2 tarDir = gotoTarget - position;
+                tarDir.Normalize();
+                float angleToTarget = (float)Math.Atan2(tarDir.Y - dir.Y, tarDir.X - dir.X);
+
+                steering = MathHelper.ToDegrees(angleToTarget);
+                steering = MathHelper.Clamp(steering, -48, 48);
+                float distance = Vector2.Distance(position, gotoTarget);
+                CalculateSpeed(distance);
+            }
+        }
+
+        private void InternalScan(GameTime gameTime)
+        {
+            if (sensorLeft)
+                sensor.SetRotationTarget((float)(Math.PI / scanSteps) * (float)scanIndex - MathHelper.PiOver2);
+            else
+                sensor.SetRotationTarget((float)(MathHelper.PiOver2 - (Math.PI / scanSteps) * (float)scanIndex));
+            sensor.Update(gameTime);
+            if(!sensor.Rotating())
+            {
+                float? sensorValue = SensorDected();
+                if (sensorValue != null)
+                    detectAny = true;
+                AddVirtualLine(sensorValue);
+                scanIndex++;
+                if (scanIndex >= scanSteps+1)
+                {
+                    travelDistance = 0;
+                    travelDistanceLimit = (detectAny ? 50.0f : 200.0f);
+                    scanIndex = 0;
+                    sensorLeft = !sensorLeft;
+                    detectAny = false;
+                }
+            }
+        }
+
+        private float? SensorDected()
+        {
+            float? returnValue = null;
+            
+            for (int i = 0; i < realObjects.Count; i++)
+            {
+                 float? sensorValue = sensor.Intersect(realObjects[i].GetRectangle());
+                 if (returnValue == null || sensorValue < returnValue)
+                     returnValue = sensorValue;
+            }
+
+            sensor.SetCollDistance(returnValue);
+
+            return returnValue;
+        }
+
+        private void AddVirtualPoint(float sensorValue)
+        {
+            Vector2 collPoint = position;
+            collPoint += sensor.GetDirection() * sensorValue;
+            collPoint.X = (float)Math.Round(collPoint.X, 1);
+            collPoint.Y = (float)Math.Round(collPoint.Y, 1);
+            if (!virtualWorldPoints.Contains(collPoint))
+                virtualWorldPoints.Add(collPoint);
+        }
+
+        private void AddVirtualLine(float? newValue)
+        {
+            if (newValue != null) //the sensor detected something
+            {
+                if (lineStart == null && lineEnd == null) //new line
+                {
+                    lineStart = position + sensor.GetDirection() * newValue.Value;
+                }
+                else if (lineStart != null) //indicates that we have a line start so either set new value to end
+                {
+                    Vector2 newPosition = position + sensor.GetDirection() * newValue.Value;
+                    lineEnd = newPosition;
+                    Line l = new Line();
+                    l.start = lineStart.Value;
+                    l.end = lineEnd.Value;
+                    virtualWorldLines.Add(l);
+                    lineStart = lineEnd;
+                    lineEnd = null;
+                }
+            }
+            else
+            {
+                lineStart = null;
+                lineEnd = null;
+            }
+        }
+
         private void UpdatePosition(GameTime gameTime)
         {
             float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
@@ -355,67 +460,9 @@ namespace CarSimulator
             if (autonomous)
                 travelDistance += speed * reverse * dt;
 
-            virtualPosition += addVector * speed * reverse * dt;
             lineListDistance += speed * dt;
             sensor.SetPosition(position);
             sensor.SetDirection(rotRad);
-        }
-
-        private void AutonomousUpdate(GameTime gameTime)
-        {
-            if (travelDistance >= travelDistanceLimit)
-            {
-                acceleration = 0.0f;
-                if (speed == 0.0f)
-                {
-                    InternalScan(gameTime);
-                }
-            }
-            else
-            {
-                acceleration = 5.0f;
-            }
-        }
-
-        private void InternalScan(GameTime gameTime)
-        {
-            if (sensorLeft)
-                sensor.SetRotationTarget((float)(Math.PI / scanSteps) * (float)scanIndex - MathHelper.PiOver2);
-            else
-                sensor.SetRotationTarget((float)(MathHelper.PiOver2 - (Math.PI / scanSteps) * (float)scanIndex));
-            sensor.Update(gameTime);
-            if(!sensor.Rotating())
-            {
-                float? sensorValue = SensorDected();
-                if (sensorValue != null)
-                    detectAny = true;
-                AddVirtualLine(sensorValue);
-                scanIndex++;
-                if (scanIndex >= scanSteps+1)
-                {
-                    travelDistance -= travelDistanceLimit;
-                    travelDistanceLimit = (detectAny ? 50.0f : 100.0f);
-                    scanIndex = 0;
-                    sensorLeft = !sensorLeft;
-                    detectAny = false;
-                }
-            }
-        }
-
-        private float? SensorDected()
-        {
-            float? returnValue = null;
-            
-            for (int i = 0; i < realObjects.Count; i++)
-            {
-                 float? sensorValue = sensor.Intersect(realObjects[i].GetRectangle());
-                 if (returnValue == null || sensorValue < returnValue)
-                     returnValue = sensorValue;
-            }
-
-            sensor.SetCollDistance(returnValue);
-
-            return returnValue;
         }
 
         public void Update(GameTime gameTime)
@@ -448,43 +495,6 @@ namespace CarSimulator
              
             UpdatePosition(gameTime);
             
-        }
-
-        private void AddVirtualPoint(float sensorValue)
-        {
-            Vector2 collPoint = position;
-            collPoint += sensor.GetDirection() * sensorValue;
-            collPoint.X = (float)Math.Round(collPoint.X, 1);
-            collPoint.Y = (float)Math.Round(collPoint.Y, 1);
-            if(!virtualWorldPoints.Contains(collPoint))
-                virtualWorldPoints.Add(collPoint);
-        }
-
-        private void AddVirtualLine(float? newValue)
-        {
-            if (newValue != null) //the sensor detected something
-            {
-                if (lineStart == null && lineEnd == null) //new line
-                {
-                    lineStart = position + sensor.GetDirection() * newValue.Value;
-                }
-                else if(lineStart != null) //indicates that we have a line start so either set new value to end
-                {
-                    Vector2 newPosition = position + sensor.GetDirection() * newValue.Value;
-                    lineEnd = newPosition;
-                    Line l = new Line();
-                    l.start = lineStart.Value;
-                    l.end = lineEnd.Value;
-                    virtualWorldLines.Add(l);
-                    lineStart = lineEnd;
-                    lineEnd = null;
-                }
-            }
-            else
-            {
-                lineStart = null;
-                lineEnd = null;
-            }
         }
 
         private void DrawLine(SpriteBatch spriteBatch, Vector2 begin, Vector2 end, Color color)

@@ -23,6 +23,7 @@ namespace CarSimulator
         bool gear;
         Texture2D basicTexture;
         SpriteFont font;
+        Vector2 target;
 
         public Game1()
             : base()
@@ -47,6 +48,8 @@ namespace CarSimulator
             basicTexture = new Texture2D(GraphicsDevice, 1, 1);
             basicTexture.SetData(new Color[] {Color.White});
             car = new Car(new Vector2(200, 300) ,basicTexture);
+            target = new Vector2(600, 100);
+            car.SetGotoTarget(target);
             base.Initialize();
         }
 
@@ -127,6 +130,7 @@ namespace CarSimulator
 
             spriteBatch.Begin();
             spriteBatch.Draw(basicTexture, new Rectangle(200 - 25, 300 - 20, 50, 40), Color.Blue);
+            spriteBatch.Draw(basicTexture, new Rectangle((int)target.X - 25, (int)target.Y - 20, 50, 40), Color.Green);
             car.Draw(spriteBatch);
             spriteBatch.DrawString(font, Math.Round(car.GetPosition().X, 2) + ":" + Math.Round(car.GetPosition().Y, 2), new Vector2(5, 5), Color.Black);
             spriteBatch.DrawString(font, Math.Round(car.GetSteering(), 2).ToString(), new Vector2(650, 5), Color.Black);
