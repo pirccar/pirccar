@@ -15,7 +15,6 @@ namespace RCClient
         GamePadState currentPadState;
         GamePadState previousPadState;
 
-
         public bool keyDown(Keys key)
         {
             return (!previousKeyState.IsKeyDown(key) && currentKeyState.IsKeyDown(key));
@@ -48,12 +47,12 @@ namespace RCClient
 
         public Vector2 getLeftStick()
         {
-            return currentPadState.ThumbSticks.Left;
+            return DoDeadZone(currentPadState.ThumbSticks.Left);
         }
 
         public Vector2 getRightStick()
         {
-            return currentPadState.ThumbSticks.Right;
+            return DoDeadZone(currentPadState.ThumbSticks.Right, 0.5f);
         }
 
         public float getLeftTrigger()
@@ -72,7 +71,21 @@ namespace RCClient
             currentKeyState = Keyboard.GetState();
 
             previousPadState = currentPadState;
-            currentPadState = GamePad.GetState(Microsoft.Xna.Framework.PlayerIndex.One);
+            currentPadState = GamePad.GetState(Microsoft.Xna.Framework.PlayerIndex.One, GamePadDeadZone.None);
+            
+        }
+
+        private Vector2 DoDeadZone(Vector2 input, float deadZone = 0.25f)
+        {
+            if (input.Length() < deadZone)
+                input = Vector2.Zero;
+            else
+            {
+                Vector2 norm = input;
+                norm.Normalize();
+                input = norm * ((input.Length() - deadZone) / (1 - deadZone));
+            }
+            return input;
         }
     }
 }

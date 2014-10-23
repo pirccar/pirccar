@@ -17,6 +17,7 @@ namespace RCClient
         int currentCheckpoint;
         bool startedGoingHome;
         public Camera camera;
+        bool useSplit = false;
 
         public SimCar(Vector2 position, Texture2D texture)
         {
@@ -68,6 +69,8 @@ namespace RCClient
             {
                 float theta = 0;
                 float useDist = 5.0f;
+                if (!useSplit)
+                    useDist = dist;
 
                 if (dist < 5.0f)
                     useDist = dist;
@@ -131,7 +134,7 @@ namespace RCClient
                 camera.position = -curPos;
             }
 
-            if (currentCheckpoint == 0 && startedGoingHome)
+            if (currentCheckpoint <= 1 && startedGoingHome)
             {
                 Reset();
             }

@@ -88,6 +88,7 @@ namespace RCClient
         bool strafe = false;
         bool stabilized = false;
         bool homeCamera = false;
+        Vector2 homeCameraPrev;
         bool playSong = false;
         float[] lxmean;
         int lxmeansize = 10;
@@ -723,6 +724,8 @@ namespace RCClient
         private void setServos(GameTime gameTime)
         {
             //grab controller values
+            Vector2 rightStick = -input.getRightStick();
+            Vector2 leftStick = input.getLeftStick();
             x = -input.getRightStick().X;
             y = -input.getRightStick().Y; //used for camera tilting
             z = input.getRightTrigger(); //used for throttle
@@ -763,14 +766,14 @@ namespace RCClient
             //
             if (lx >= 0)
             {
-                lx = lx;
-                //lx = (float)Math.Pow(lx, 3.5);
+                //lx = lx;
+                //lx = (float)Math.Pow(lx, 1.5);
             }
             else
             {
                 lx *= -1;
-                lx = (float)Math.Pow(lx, 1.5);
-                lx *= -1;
+                //lx = (float)Math.Pow(lx, 1.5);
+                //lx *= -1;
             }
 
 
@@ -781,25 +784,45 @@ namespace RCClient
             float yMoveFactor = 0.0f;
 
             //the camera stays in place when you move it, so calculate how much to move the camera
+            /*
             if (x > 0.5f || x < -0.5f)
             {
                 xMoveFactor = (100.0f * x * (float)gameTime.ElapsedGameTime.TotalSeconds);
             }
-
             if (y > 0.5f || y < -0.5f)
             {
-                yMoveFactor = (50.0f * y * (float)gameTime.ElapsedGameTime.TotalSeconds);
+                yMoveFactor = (100.0f * y * (float)gameTime.ElapsedGameTime.TotalSeconds);
+            }
+            */
+
+            if (rightStick.Length() < 0.5f)
+            {
+                xMoveFactor = 0.0f;
+                yMoveFactor = 0.0f;
+            }
+            else
+            {
+                xMoveFactor = (100.0f * x * (float)gameTime.ElapsedGameTime.TotalSeconds);
+                yMoveFactor = (100.0f * y * (float)gameTime.ElapsedGameTime.TotalSeconds);
             }
 
+           
+
             //Set new values of servos
-            servos[cameraXChannel].setValue(servos[0].getValue() + xMoveFactor); //CameraX
-            servos[cameraYChannel].setValue(servos[1].getValue() + yMoveFactor); //CameraY
-            servos[steeringFChannel].setValue(MathHelper.Clamp(320.0f + ((lx * -1) * 48.0f), servos[steeringFChannel].getMin(), servos[steeringFChannel].getMax())); //Steering 1
+            if (!homeCamera)
+            {
+                servos[cameraXChannel].setValue((int)(servos[0].getValue() + xMoveFactor)); //CameraX
+                servos[cameraYChannel].setValue((int)(servos[1].getValue() + yMoveFactor)); //CameraY
+                homeCameraPrev.X = servos[cameraXChannel].getValue();
+                homeCameraPrev.Y = servos[cameraYChannel].getValue();
+            }
+
+            servos[steeringFChannel].setValue((int)MathHelper.Clamp(320.0f + ((lx * -1) * 48.0f), servos[steeringFChannel].getMin(), servos[steeringFChannel].getMax())); //Steering 1
             if (strafe)
-                servos[steeringBChannel].setValue(MathHelper.Clamp(320.0f + ((lx * -1) * 48.0f), servos[steeringBChannel].getMin(), servos[steeringBChannel].getMax())); //steering 2
+                servos[steeringBChannel].setValue((int)MathHelper.Clamp(320.0f + ((lx * -1) * 48.0f), servos[steeringBChannel].getMin(), servos[steeringBChannel].getMax())); //steering 2
             else
-                servos[steeringBChannel].setValue(MathHelper.Clamp(320.0f + (lx * 48.0f), servos[steeringBChannel].getMin(), servos[steeringBChannel].getMax())); //steering 2
-            servos[throttleChannel].setValue(MathHelper.Lerp(servos[throttleChannel].getMin(), maxSpeed, z)); //throttle
+                servos[steeringBChannel].setValue((int)MathHelper.Clamp(320.0f + (lx * 48.0f), servos[steeringBChannel].getMin(), servos[steeringBChannel].getMax())); //steering 2
+            servos[throttleChannel].setValue((int)MathHelper.Lerp(servos[throttleChannel].getMin(), maxSpeed, z)); //throttle
         }
 
         private void checkInput()
@@ -935,14 +958,9 @@ namespace RCClient
                 simCar.camera.Zoom(-1);
         }
 
-        //updates user input
-        protected override void Update(GameTime gameTime)
+        private void HomeCamera(GameTime gameTime)
         {
-            input.update();
-
-            checkInput();
-
-            if(homeCamera)
+            if (homeCamera)
             {
                 Vector2 current = new Vector2(servos[cameraXChannel].getValue(), servos[cameraYChannel].getValue());
                 Vector2 target = new Vector2(320, 320);
@@ -953,9 +971,32 @@ namespace RCClient
                     set = target;
                     homeCamera = false;
                 }
-                servos[cameraXChannel].setValue(set.X);
-                servos[cameraYChannel].setValue(set.Y);
+                else
+                {
+                    Vector2 delta = homeCameraPrev - set;
+                    if (set.X < target.X)
+                        set.X = (float)Math.Ceiling(set.X);
+                    else
+                        set.X = (float)Math.Floor(set.X);
+                    if (set.Y < target.Y)
+                        set.Y = (float)Math.Ceiling(set.Y);
+                    else
+                        set.Y = (float)Math.Floor(set.Y);
+                }
+                servos[cameraXChannel].setValue((int)set.X);
+                servos[cameraYChannel].setValue((int)set.Y);
+                homeCameraPrev = set;
             }
+        }
+
+        //updates user input
+        protected override void Update(GameTime gameTime)
+        {
+            input.update();
+
+            checkInput();
+
+            HomeCamera(gameTime);
 
             //Set servo values from input
             setServos(gameTime);

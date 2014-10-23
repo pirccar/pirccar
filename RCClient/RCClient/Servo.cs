@@ -19,23 +19,23 @@ namespace RCClient
     class Servo
     {
         int id; //id mapping to physical port on PCA9685
-        float value;
-        float min;
-        float max;
+        int value;
+        int min;
+        int max;
         int trim;
         ServoType type;
 
         public Servo(int id)
         {
             this.id = id;
-            value = 0.0f;
+            value = 0;
             type = ServoType.Unknown;
-            min = 130.0f;
-            max = 470.0f;
+            min = 130;
+            max = 470;
             trim = 0;
         }
 
-        public void setValue(float value)
+        public void setValue(int value)
         {
             if (value > max)
                 value = max;
@@ -51,28 +51,28 @@ namespace RCClient
             switch (type)
             { 
                 case ServoType.Camera :
-                    min = 320.0f - 150.0f;
-                    max = 320.0f + 150.0f;
+                    min = 320 - 150;
+                    max = 320 + 150;
                     break;
 
                 case ServoType.Gear :
-                    min = 130.0f;
-                    max = 470.0f;
+                    min = 130;
+                    max = 470;
                     break;
 
                 case ServoType.Steering:
-                    min = 245.0f;
-                    max = 395.0f;
+                    min = 245;
+                    max = 395;
                     break;
 
                 case ServoType.Throttle:
-                    min = 180.0f;
-                    max = 400.0f;
+                    min = 180;
+                    max = 400;
                     break;
 
                 case ServoType.Unknown:
-                    min = 130.0f;
-                    max = 470.0f;
+                    min = 130;
+                    max = 470;
                     break;
             }
         }
@@ -84,7 +84,7 @@ namespace RCClient
 
         public void setMid()
         {
-            value = 320.0f;
+            value = 320;
         }
 
         public void setOn()
@@ -97,17 +97,17 @@ namespace RCClient
             return id;
         }
 
-        public float getMin()
+        public int getMin()
         {
             return min;
         }
 
-        public float getMax()
+        public int getMax()
         {
             return max;
         }
 
-        public float getValue()
+        public int getValue()
         {
             return value + trim;
         }
