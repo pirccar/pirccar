@@ -31,24 +31,35 @@ namespace CarSimulator
         float steering;
         float speed;
         int reverse;
-        int tireWidth;
-        int tireRowSpacing;
+        float tireWidth;
+        float tireRowSpacing;
         List<Vector2> lineList;
         float lineListDistance;
 
         DistanceSensor sensor;
+        DistanceSensor[] passiveSensors;
         List<RealWorldObject> realObjects;
         List<Vector2> virtualWorldPoints;
         List<Line?> virtualWorldLines;
         Vector2 gotoTarget;
+        List<Vector2> gotoTargets;
+        int gotoTargetIndex;
         bool renderRealWorld;
         bool autonomous;
+        bool turnAround;
+        float turnAroundStartRotation;
+        bool turnAroundEStop;
+        bool turnAroundSStop;
         float travelDistance;
         float travelDistanceLimit;
         int scanSteps;
         int scanIndex;
         bool sensorLeft;
         bool detectAny;
+        bool scanning;
+        float previousPassiveValue;
+        int collLeft;
+        int collRight;
         Vector2? lineStart;
         Vector2? lineEnd;
 
@@ -79,12 +90,13 @@ namespace CarSimulator
             servos[1] = new Servo(1, 180, ServoType.throttle);
             servos[2] = new Servo(2, 0, ServoType.gear);
             lastChannelIndex = new int[3];
-            tireWidth = 50;
-            tireRowSpacing = 50;
+            tireWidth = 50.0f;
+            tireRowSpacing = 50.0f;
             goHomeData = new List<ServoTiming>();
             lineList = new List<Vector2>();
 
             sensor = new DistanceSensor(position, rotRad, texture);
+            passiveSensors = new DistanceSensor[4];
             virtualWorldPoints = new List<Vector2>();
             virtualWorldLines = new List<Line?>();
             renderRealWorld = true;
@@ -94,14 +106,45 @@ namespace CarSimulator
             scanIndex = 0;
             sensorLeft = true;
             detectAny = false;
+            gotoTargets = new List<Vector2>();
+            gotoTargetIndex = 0;
+            turnAround = false;
+            scanning = false;
+            turnAroundEStop = false;
+            turnAroundSStop = false;
 
             realObjects = new List<RealWorldObject>();
-            RealWorldObject realObject = new RealWorldObject(new Vector2(600, 100), 100, 100, texture);
-            //realObjects.Add(realObject);
-            realObject = new RealWorldObject(new Vector2(600, 350), 100, 100, texture);
-            //realObjects.Add(realObject);
+            /*
+            RealWorldObject realObject = new RealWorldObject(new Vector2(550, 150), 25, 400, texture);
+            realObjects.Add(realObject);
+            realObject = new RealWorldObject(new Vector2(0, 0), 550, 25, texture);
+            realObjects.Add(realObject);
+            realObject = new RealWorldObject(new Vector2(0, 0), 25, 500, texture);
+            realObjects.Add(realObject);
+            realObject = new RealWorldObject(new Vector2(0, 450), 550, 25, texture);
+            realObjects.Add(realObject);
+            */
+
+            RealWorldObject realObject = new RealWorldObject(new Vector2(550, 300), 50, 50, texture);
+            realObjects.Add(realObject);
+            realObject = new RealWorldObject(new Vector2(200, 375), 50, 50, texture);
+            realObjects.Add(realObject);
+            realObject = new RealWorldObject(new Vector2(300, 150), 50, 50, texture);
+            realObjects.Add(realObject);
+            realObject = new RealWorldObject(new Vector2(575, 125), 50, 50, texture);
+            realObjects.Add(realObject);
+
             goHomeIndex = -1;
             goHome = false;
+
+            for (int i = 0; i < passiveSensors.Length; i++)
+            {
+                passiveSensors[i] = new DistanceSensor(position, rotRad, texture);
+            }
+            passiveSensors[0].SetInternalRotation(-MathHelper.PiOver4);
+            passiveSensors[1].SetInternalRotation((float)-Math.PI / 8);
+            passiveSensors[2].SetInternalRotation((float)Math.PI / 8);
+            passiveSensors[3].SetInternalRotation(MathHelper.PiOver4);
         }
 
         public Vector2 GetPosition()
@@ -117,6 +160,11 @@ namespace CarSimulator
         public float GetSteering()
         {
             return steering;
+        }
+
+        public float GetRotation()
+        {
+            return rotRad;
         }
 
         public void Reset()
@@ -140,6 +188,7 @@ namespace CarSimulator
             scanIndex = 0;
             sensorLeft = true;
             detectAny = false;
+            gotoTargetIndex = 0;
         }
 
         public void SetServo(int channel, int value)
@@ -169,7 +218,7 @@ namespace CarSimulator
             if (calcSpeed == 0)
                 calcSpeed = 1;
             acceleration = (distance * 4.35f) / calcSpeed;
-            acceleration = MathHelper.Clamp(acceleration, 1, 15); 
+            acceleration = (int)MathHelper.Clamp(acceleration, 1, 15); 
             
         }
 
@@ -320,27 +369,137 @@ namespace CarSimulator
             this.gotoTarget = target;
         }
 
+        public void AddGotoTarget(Vector2 target)
+        {
+            gotoTargets.Add(target);
+        }
+
         private void AutonomousUpdate(GameTime gameTime)
         {
-            if (false)//(travelDistance >= travelDistanceLimit)
+            float? passive = CheckPasiveSensors();
+            if (gotoTargetIndex >= gotoTargets.Count)
+            {
+                acceleration = 0;
+                gotoTargetIndex = 0;
+                return;
+            }
+            else if (scanning || travelDistance >= travelDistanceLimit)
+            //else if (scanning || (passive != previousPassiveValue && passive != null && passive.Value <= 250.0f))
             {
                 acceleration = 0.0f;
+                scanning = true;
                 if (speed == 0.0f)
                 {
+                    if (scanIndex == 0)
+                    {
+                        virtualWorldLines.Clear();
+                        lineStart = null;
+                        lineEnd = null;
+                        collLeft = 0;
+                        collRight = 0;
+                    }
                     InternalScan(gameTime);
+
+                    if (scanIndex == 0 && travelDistance == 0)
+                    {
+                        CheckCollision(rotRad, Vector2.Distance(position, gotoTargets[gotoTargets.Count - 1 - gotoTargetIndex]));
+                        //CheckNextState();
+                        scanning = false;
+                    }
                 }
             }
-            else
+            else if(gotoTargetIndex != -1)
             {
-                Vector2 dir = new Vector2((float)Math.Cos(rotRad), (float)Math.Sin(rotRad));
-                Vector2 tarDir = gotoTarget - position;
-                tarDir.Normalize();
-                float angleToTarget = (float)Math.Atan2(tarDir.Y - dir.Y, tarDir.X - dir.X);
+                if (gotoTargetIndex >= gotoTargets.Count)
+                {
+                    acceleration = 0;
+                    gotoTargetIndex = 0;
+                    return;
+                }
 
-                steering = MathHelper.ToDegrees(angleToTarget);
-                steering = MathHelper.Clamp(steering, -48, 48);
-                float distance = Vector2.Distance(position, gotoTarget);
-                CalculateSpeed(distance);
+                Vector2 dir = new Vector2((float)Math.Cos(rotRad), (float)Math.Sin(rotRad));
+                Vector2 tarDir = gotoTargets[gotoTargets.Count - 1 - gotoTargetIndex] - position;
+                
+                tarDir.Normalize();
+
+                float v1 = (float)Math.Atan2(tarDir.Y, tarDir.X);
+                float v2 = (float)Math.Atan2(dir.Y, dir.X);
+                float angle1 = v1 - v2;
+                float angle2 = v2 - v1;
+                float angleToTarget = angle1;
+                if(angleToTarget > Math.PI)
+                {
+                    float removeFactor = angleToTarget - (float)Math.PI;
+                    angleToTarget = (float)-Math.PI + removeFactor;
+                }
+
+                steering = (int)MathHelper.ToDegrees(angleToTarget);
+                steering = -(int)MathHelper.Clamp(steering, -48, 48);
+                float distance = Vector2.Distance(position, gotoTargets[gotoTargets.Count - 1 - gotoTargetIndex]);
+
+                CalculateSpeed(distance < travelDistanceLimit - travelDistance ? distance : travelDistanceLimit - travelDistance);
+                //CalculateSpeed(distance);
+                if(distance <= 15.0f)
+                {
+                    gotoTargets.RemoveAt(gotoTargets.Count - 1 - gotoTargetIndex);
+                    //gotoTargetIndex++;
+                    travelDistanceLimit = 0;
+                }
+            }
+
+            previousPassiveValue = passive.HasValue ? passive.Value : 0;
+        }
+
+        private void CheckNextState()
+        {
+            Vector2 dir = new Vector2((float)Math.Cos(rotRad), (float)Math.Sin(rotRad));
+            Vector2 tarDir = gotoTargets[gotoTargets.Count - 1 - gotoTargetIndex] - position;
+            float distance = Vector2.Distance(position, gotoTargets[gotoTargets.Count - 1 - gotoTargetIndex]);
+            distance = distance < travelDistanceLimit - travelDistance ? distance : travelDistanceLimit - travelDistance;
+
+            tarDir.Normalize();
+
+            float v1 = (float)Math.Atan2(tarDir.Y, tarDir.X);
+            float v2 = (float)Math.Atan2(dir.Y, dir.X);
+            float angle1 = v1 - v2;
+            float angle2 = v2 - v1;
+            float angleToTarget = angle1;
+            if (angleToTarget > Math.PI)
+            {
+                float removeFactor = angleToTarget - (float)Math.PI;
+                angleToTarget = (float)-Math.PI + removeFactor;
+            }
+
+            steering = (int)MathHelper.ToDegrees(angleToTarget);
+            steering = -(int)MathHelper.Clamp(steering, -48, 48);
+
+            float x = (tireRowSpacing / Math.Abs((float)Math.Atan(steering)) + tireWidth / 2);
+            float r = (float)Math.Sqrt(x * x + (tireRowSpacing / 2) * (tireRowSpacing / 2));
+            float theta = (distance * reverse) / r;
+
+            if (steering > 0.0f)
+                theta = -theta;
+
+            Quaternion newRotation = rotation * Quaternion.CreateFromAxisAngle(new Vector3(0, 0, 1), theta);
+
+            Vector2 right = new Vector2(1, 0);
+            Vector2 addVector = Vector2.Transform(right, newRotation);
+
+            Vector2 calcPosition = position + addVector * reverse * distance;
+            bool collision = false;
+            for (int i = 0; i < virtualWorldLines.Count; i++)
+            {
+                if (virtualWorldLines[i] == null)
+                    continue;
+                if (lineIntersect(virtualWorldLines[i].Value.start, virtualWorldLines[i].Value.end, position, calcPosition))
+                {
+                    collision = true;
+                }
+            }
+
+            if(collision)
+            {
+                gotoTargets.Add(position + dir * 50);
             }
         }
 
@@ -356,15 +515,111 @@ namespace CarSimulator
                 float? sensorValue = SensorDected();
                 if (sensorValue != null)
                     detectAny = true;
+
+                if (sensorValue != null)
+                {
+                    if (scanIndex < scanSteps / 2)
+                    {
+                        if (sensorLeft)
+                            collLeft++;
+                        else
+                            collRight++;
+                    }
+                    else
+                    {
+                        if (sensorLeft)
+                            collRight++;
+                        else
+                            collLeft++;
+                    }
+                }
                 AddVirtualLine(sensorValue);
                 scanIndex++;
                 if (scanIndex >= scanSteps+1)
                 {
                     travelDistance = 0;
-                    travelDistanceLimit = (detectAny ? 50.0f : 200.0f);
+                    //travelDistanceLimit = (detectAny ? 50.0f : 100.0f);
                     scanIndex = 0;
                     sensorLeft = !sensorLeft;
                     detectAny = false;
+                }
+            }
+        }
+
+        private float? CheckPasiveSensors()
+        {
+            float? returnValue = null;
+            
+            for (int i = 0; i < passiveSensors.Length; i++)
+            {
+                passiveSensors[i].SetPosition(position);
+                passiveSensors[i].SetDirection(rotRad);
+                for (int j = 0; j < realObjects.Count; j++)
+                {
+                    float? sensorValue = passiveSensors[i].Intersect(realObjects[j].GetRectangle());
+                    if (returnValue == null || sensorValue < returnValue)
+                        returnValue = sensorValue;
+                }
+                passiveSensors[i].SetCollDistance(returnValue);
+            }
+
+            return returnValue;
+        }
+
+        private void CheckCollision(float rotation, float distance)
+        {
+            float newRot = rotation;
+            float newDist = distance;
+            bool pointAdded = false;
+            int nChecks = 0;
+            while (!pointAdded)
+            {
+                Vector2 newDir = new Vector2((float)Math.Cos(newRot), (float)Math.Sin(newRot));
+                bool collision = false;
+                float smallestDist = float.MaxValue;
+                for (int i = 0; i < virtualWorldLines.Count; i++)
+                {
+                    if (virtualWorldLines[i] == null)
+                        continue;
+                    if (lineIntersect(virtualWorldLines[i].Value.start, virtualWorldLines[i].Value.end, position, position + newDir * newDist))
+                    {
+                        collision = true;
+                        float d1 = Vector2.Distance(position, virtualWorldLines[i].Value.start);
+                        float d2 = Vector2.Distance(position, virtualWorldLines[i].Value.end);
+                        float s = d1 < d2 ? d1 : d2;
+                        smallestDist = smallestDist < s ? smallestDist : s;
+                    }
+                }
+                if (collision)
+                {
+                    if (collLeft < collRight)
+                        newRot -= (float)Math.PI / 16;
+                    else
+                        newRot += (float)Math.PI / 16;
+                    newDist = smallestDist;
+                    travelDistanceLimit = 50.0f;
+                    nChecks++;
+                }
+                else if (newRot != rotation)
+                {
+                    gotoTargets.Add(position + newDir * (newDist - newDist / 1.25f));
+                    pointAdded = true;
+                }
+                else
+                {
+                    for (int i = 0; i < virtualWorldLines.Count; i++)
+                    {
+                        if (virtualWorldLines[i] == null)
+                            continue;
+                        if (lineIntersect(virtualWorldLines[i].Value.start, virtualWorldLines[i].Value.end, position, gotoTargets[gotoTargets.Count -1]))
+                        {
+                            gotoTargets.Add(position + newDir * 150);
+                            break;
+                        }
+                    }
+                    
+                    pointAdded = true;
+                    travelDistanceLimit = 150.0f;
                 }
             }
         }
@@ -383,6 +638,26 @@ namespace CarSimulator
             sensor.SetCollDistance(returnValue);
 
             return returnValue;
+        }
+
+        private bool lineIntersect(Vector2 p0Start, Vector2 p0End, Vector2 p1Start, Vector2 p1End)
+        {
+            float s0x, s0y, s1x, s1y;
+            s0x = p0End.X - p0Start.X;
+            s0y = p0End.Y - p0Start.Y;
+            s1x = p1End.X - p1Start.X;
+            s1y = p1End.Y - p1Start.Y;
+
+            float s, t;
+            s = (-s0y * (p0Start.X - p1Start.X) + s0x * (p0Start.Y - p1Start.Y)) / (-s1x * s0y + s0x * s1y);
+            t = ( s1x * (p0Start.Y - p1Start.Y) - s1y * (p0Start.X - p1Start.X)) / (-s1x * s0y + s0x * s1y);
+
+            if(s >= 0 && s<= 1 && t >= 0 && t <= 1)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private void AddVirtualPoint(float sensorValue)
@@ -540,8 +815,19 @@ namespace CarSimulator
                 {
                     DrawLine(spriteBatch, virtualWorldLines[i].Value.start, virtualWorldLines[i].Value.end, Color.Gold);
                 }
+
+                for (int i = 0; i < gotoTargets.Count; i++)
+                {
+                    spriteBatch.Draw(texture, new Rectangle((int)gotoTargets[i].X - 10, (int)gotoTargets[i].Y - 10, 20, 20), Color.DarkMagenta);
+                }
+
+                for (int i = 0; i < passiveSensors.Length; i++)
+                {
+                    passiveSensors[i].Draw(spriteBatch);
+                }
             }
             sensor.Draw(spriteBatch);
+            
         }
     }
 }

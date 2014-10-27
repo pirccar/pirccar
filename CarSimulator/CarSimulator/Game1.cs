@@ -23,7 +23,7 @@ namespace CarSimulator
         bool gear;
         Texture2D basicTexture;
         SpriteFont font;
-        Vector2 target;
+        List<Vector2> targets;
 
         public Game1()
             : base()
@@ -48,8 +48,15 @@ namespace CarSimulator
             basicTexture = new Texture2D(GraphicsDevice, 1, 1);
             basicTexture.SetData(new Color[] {Color.White});
             car = new Car(new Vector2(200, 300) ,basicTexture);
-            target = new Vector2(600, 100);
-            car.SetGotoTarget(target);
+            targets  = new List<Vector2>();
+            targets.Add(new Vector2(800, 300));
+            //targets.Add(new Vector2(50, 300));
+            //targets.Add(new Vector2(900, 450));
+            
+            for (int i = 0; i < targets.Count; i++)
+            {
+                car.AddGotoTarget(targets[i]);
+            }
             base.Initialize();
         }
 
@@ -130,11 +137,16 @@ namespace CarSimulator
 
             spriteBatch.Begin();
             spriteBatch.Draw(basicTexture, new Rectangle(200 - 25, 300 - 20, 50, 40), Color.Blue);
-            spriteBatch.Draw(basicTexture, new Rectangle((int)target.X - 25, (int)target.Y - 20, 50, 40), Color.Green);
+            for (int i = 0; i < targets.Count; i++)
+            {
+                spriteBatch.Draw(basicTexture, new Rectangle((int)targets[i].X - 25, (int)targets[i].Y - 20, 50, 40), Color.Green);
+            }
+            
             car.Draw(spriteBatch);
             spriteBatch.DrawString(font, Math.Round(car.GetPosition().X, 2) + ":" + Math.Round(car.GetPosition().Y, 2), new Vector2(5, 5), Color.Black);
             spriteBatch.DrawString(font, Math.Round(car.GetSteering(), 2).ToString(), new Vector2(650, 5), Color.Black);
             spriteBatch.DrawString(font, Math.Round(car.GetSpeed(),1).ToString(), new Vector2(750, 5), Color.Black);
+            spriteBatch.DrawString(font, Math.Round(MathHelper.ToDegrees(car.GetRotation()), 1).ToString(), new Vector2(550, 5), Color.Black);
             spriteBatch.End();
             // TODO: Add your drawing code here
 
