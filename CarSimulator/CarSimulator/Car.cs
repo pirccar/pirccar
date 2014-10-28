@@ -19,6 +19,15 @@ namespace CarSimulator
         public Vector2 end;
     }
 
+    struct ManhattanSquare
+    {
+        public int g;
+        public int h;
+        public int f;
+        public Vector2 pos;
+        public Vector2 parent;
+    }
+
     class Car
     {
         Servo[] servos;
@@ -43,28 +52,28 @@ namespace CarSimulator
         List<Line?> virtualWorldLines;
         Vector2 gotoTarget;
         List<Vector2> gotoTargets;
+        List<Vector2> manhattanTargets;
         int gotoTargetIndex;
         bool renderRealWorld;
         bool autonomous;
         bool turnAround;
-        float turnAroundStartRotation;
-        bool turnAroundEStop;
-        bool turnAroundSStop;
         float travelDistance;
         float travelDistanceLimit;
         int scanSteps;
         int scanIndex;
         bool sensorLeft;
-        bool detectAny;
+        bool collisionPathDetected;
         bool scanning;
         float previousPassiveValue;
         int collLeft;
         int collRight;
+        int lastTurnDir;
         Vector2? lineStart;
         Vector2? lineEnd;
 
         List<ServoTiming> goHomeData;
         int goHomeIndex;
+        int goHomeTargetIndex;
         bool goHome;
         int prevGearValue;
         bool stop = false;
@@ -105,16 +114,15 @@ namespace CarSimulator
             scanSteps = 40;
             scanIndex = 0;
             sensorLeft = true;
-            detectAny = false;
+            collisionPathDetected = false;
             gotoTargets = new List<Vector2>();
+            manhattanTargets = new List<Vector2>();
             gotoTargetIndex = 0;
             turnAround = false;
             scanning = false;
-            turnAroundEStop = false;
-            turnAroundSStop = false;
 
             realObjects = new List<RealWorldObject>();
-            /*
+            //Exit room doorway top right
             RealWorldObject realObject = new RealWorldObject(new Vector2(550, 150), 25, 400, texture);
             realObjects.Add(realObject);
             realObject = new RealWorldObject(new Vector2(0, 0), 550, 25, texture);
@@ -123,17 +131,26 @@ namespace CarSimulator
             realObjects.Add(realObject);
             realObject = new RealWorldObject(new Vector2(0, 450), 550, 25, texture);
             realObjects.Add(realObject);
+            
+
+            // office
+            /*
+            RealWorldObject realObject = new RealWorldObject(new Vector2(0, 750), 500, 25, texture);
+            realObjects.Add(realObject);
+            realObject = new RealWorldObject(new Vector2(0, 400), 500, 25, texture);
+            realObjects.Add(realObject);
+            realObject = new RealWorldObject(new Vector2(750, 750), 500, 25, texture);
+            realObjects.Add(realObject);
+            realObject = new RealWorldObject(new Vector2(750, 400), 500, 25, texture);
+            realObjects.Add(realObject);
+
+            realObject = new RealWorldObject(new Vector2(0, 50), 500, 25, texture);
+            realObjects.Add(realObject);
+            realObject = new RealWorldObject(new Vector2(750, 50), 500, 25, texture);
+            realObjects.Add(realObject);
+            realObject = new RealWorldObject(new Vector2(0, 0), 25, 800, texture);
+            realObjects.Add(realObject);
             */
-
-            RealWorldObject realObject = new RealWorldObject(new Vector2(550, 300), 50, 50, texture);
-            realObjects.Add(realObject);
-            realObject = new RealWorldObject(new Vector2(200, 375), 50, 50, texture);
-            realObjects.Add(realObject);
-            realObject = new RealWorldObject(new Vector2(300, 150), 50, 50, texture);
-            realObjects.Add(realObject);
-            realObject = new RealWorldObject(new Vector2(575, 125), 50, 50, texture);
-            realObjects.Add(realObject);
-
             goHomeIndex = -1;
             goHome = false;
 
@@ -150,22 +167,22 @@ namespace CarSimulator
         public Vector2 GetPosition()
         {
             return position;
-        }
+        } //get cars current position
 
         public float GetSpeed()
         {
             return speed;
-        }
+        } //get cars current speed
 
         public float GetSteering()
         {
             return steering;
-        }
+        } //get cars current wheel direction
 
         public float GetRotation()
         {
             return rotRad;
-        }
+        } //get cars rotation
 
         public void Reset()
         {
@@ -187,24 +204,25 @@ namespace CarSimulator
             travelDistance = 0.0f;
             scanIndex = 0;
             sensorLeft = true;
-            detectAny = false;
+            collisionPathDetected = false;
             gotoTargetIndex = 0;
-        }
+        } //reset the simulation
 
         public void SetServo(int channel, int value)
         {
             servos[channel].SetValue(value);
-        }
+        } //set a servo to a value
 
-        public void GoHome()
+        public void GoHome(int targetIndex = -1)
         {
             if (!goHome)
             {
                 errorSum = 0;
                 lastError = 0;
+                goHomeTargetIndex = targetIndex;
             }
             goHome = true;
-        }
+        } //tell the car to go home
 
         private void CalculateSpeed(float distance)
         {
@@ -220,7 +238,7 @@ namespace CarSimulator
             acceleration = (distance * 4.35f) / calcSpeed;
             acceleration = (int)MathHelper.Clamp(acceleration, 1, 15); 
             
-        }
+        } //calculate a speed depending on distance to travel
 
         private void CalculateSpeedPid(float distance, GameTime gameTime)
         {
@@ -231,11 +249,11 @@ namespace CarSimulator
 
             acceleration = kp * distance + ki * errorSum + kd * dErr;
             lastError = distance;
-        }
+        } //speed calculation using pid controller
 
         private void InternalGoHome(GameTime gameTime)
         {
-            if(goHomeIndex == -1) //this idicates that we have gone thru every state
+            if (goHomeIndex == goHomeTargetIndex) //this idicates that we have gone thru every state
             {
                 acceleration = 0; //so put the acceleration to 0, this will in time stop the car
                 if (speed == 0) //and if the car has stopped then we are done!
@@ -296,7 +314,7 @@ namespace CarSimulator
                 }
             }
             prevGearValue = reverse; //used to check for stopping
-        }
+        } 
 
         private void saveStates(GameTime gameTime)
         {
@@ -354,7 +372,7 @@ namespace CarSimulator
             steering = MathHelper.ToRadians(servos[0].GetValue() - 320);
         }
 
-        public void ToggleRealWorld()
+        public void ToggleRealWorld() //render objects or not
         {
             renderRealWorld = !renderRealWorld;
         }
@@ -362,63 +380,74 @@ namespace CarSimulator
         public void ToggleAutonomous()
         {
             autonomous = !autonomous;
-        }
+        } //the car will drive by itself
 
         public void SetGotoTarget(Vector2 target)
         {
             this.gotoTarget = target;
-        }
+        } //set target tp drive to
 
         public void AddGotoTarget(Vector2 target)
         {
             gotoTargets.Add(target);
-        }
+        } //add target to drive to
 
         private void AutonomousUpdate(GameTime gameTime)
         {
             float? passive = CheckPasiveSensors();
-            if (gotoTargetIndex >= gotoTargets.Count)
+            if (gotoTargetIndex >= gotoTargets.Count) //indicates that there are not more targets to go to, car is done
             {
                 acceleration = 0;
                 gotoTargetIndex = 0;
                 return;
             }
-            else if (scanning || travelDistance >= travelDistanceLimit)
+            else if(turnAround)
+            {
+                InternalTurnAround();
+            }
+            else if (scanning || travelDistance >= travelDistanceLimit) //if the car is scanning the enviroment
             //else if (scanning || (passive != previousPassiveValue && passive != null && passive.Value <= 250.0f))
             {
-                acceleration = 0.0f;
+                acceleration = 0.0f; //stop the car
                 scanning = true;
-                if (speed == 0.0f)
+                if (speed == 0.0f) //if the car has stopped we can start scanning
                 {
-                    if (scanIndex == 0)
+                    if (scanIndex == 0) //at the first scan set some values
                     {
-                        virtualWorldLines.Clear();
+                        //virtualWorldLines.Clear();
                         lineStart = null;
                         lineEnd = null;
                         collLeft = 0;
                         collRight = 0;
+                        collisionPathDetected = false;
                     }
-                    InternalScan(gameTime);
+                    InternalScan(gameTime); //do one scan
 
-                    if (scanIndex == 0 && travelDistance == 0)
+                    if (scanIndex == 0 && travelDistance == 0) //last scan, check if the car will collide with anything etc
                     {
                         CheckCollision(rotRad, Vector2.Distance(position, gotoTargets[gotoTargets.Count - 1 - gotoTargetIndex]));
-                        //CheckNextState();
                         scanning = false;
+                        if (collisionPathDetected) //should indicate that the car will hit something
+                            TurnAround();
+                        ManhattanCalculation(); //path finding.
                     }
                 }
             }
-            else if(gotoTargetIndex != -1)
+            else if(gotoTargetIndex != -1) //the car is moving towards a target
             {
-                if (gotoTargetIndex >= gotoTargets.Count)
+                if (gotoTargetIndex >= gotoTargets.Count) //not really needed but lets check if we are done..
                 {
                     acceleration = 0;
                     gotoTargetIndex = 0;
                     return;
                 }
 
-                Vector2 dir = new Vector2((float)Math.Cos(rotRad), (float)Math.Sin(rotRad));
-                Vector2 tarDir = gotoTargets[gotoTargets.Count - 1 - gotoTargetIndex] - position;
+                Vector2 dir = new Vector2((float)Math.Cos(rotRad), (float)Math.Sin(rotRad)); //dirrection of car
+                Vector2 tarDir = gotoTargets[gotoTargets.Count - 1 - gotoTargetIndex] - position; //direction from position to current target
+                float distance = Vector2.Distance(position, gotoTargets[gotoTargets.Count - 1 - gotoTargetIndex]); //calculate distance to target
+
+                if (manhattanTargets.Count > 0 && distance > 100) //use manhattan target instead
+                    tarDir = manhattanTargets[manhattanTargets.Count -1] - position;
                 
                 tarDir.Normalize();
 
@@ -426,20 +455,24 @@ namespace CarSimulator
                 float v2 = (float)Math.Atan2(dir.Y, dir.X);
                 float angle1 = v1 - v2;
                 float angle2 = v2 - v1;
-                float angleToTarget = angle1;
+                float angleToTarget = angle1; //the angle to the target in radians
                 if(angleToTarget > Math.PI)
                 {
-                    float removeFactor = angleToTarget - (float)Math.PI;
+                    float removeFactor = angleToTarget - (float)Math.PI; //calculations to ensuse proper angles from -180 to 180 degrees 
                     angleToTarget = (float)-Math.PI + removeFactor;
                 }
 
-                steering = (int)MathHelper.ToDegrees(angleToTarget);
-                steering = -(int)MathHelper.Clamp(steering, -48, 48);
-                float distance = Vector2.Distance(position, gotoTargets[gotoTargets.Count - 1 - gotoTargetIndex]);
+                steering = (int)MathHelper.ToDegrees(angleToTarget); //set steering
+                steering = -(int)MathHelper.Clamp(steering, -48, 48); //and clamp it, car cant turn at 180 degree angles
 
-                CalculateSpeed(distance < travelDistanceLimit - travelDistance ? distance : travelDistanceLimit - travelDistance);
+                lastTurnDir = steering > 0 ? 1 : steering < 0 ? -1 : 0;
+
+                if (manhattanTargets.Count > 0 && distance > 100)
+                    distance = Vector2.Distance(position, manhattanTargets[manhattanTargets.Count - 1]);
+
+                CalculateSpeed(distance < travelDistanceLimit - travelDistance ? distance : travelDistanceLimit - travelDistance); //calculate speed
                 //CalculateSpeed(distance);
-                if(distance <= 15.0f)
+                if(distance <= 15.0f && manhattanTargets.Count <= 1) //close enough to target, lets goto next target
                 {
                     gotoTargets.RemoveAt(gotoTargets.Count - 1 - gotoTargetIndex);
                     //gotoTargetIndex++;
@@ -447,78 +480,314 @@ namespace CarSimulator
                 }
             }
 
-            previousPassiveValue = passive.HasValue ? passive.Value : 0;
+            previousPassiveValue = passive.HasValue ? passive.Value : 0; //not use right now
         }
 
-        private void CheckNextState()
+        private void ManhattanCalculation()
         {
-            Vector2 dir = new Vector2((float)Math.Cos(rotRad), (float)Math.Sin(rotRad));
-            Vector2 tarDir = gotoTargets[gotoTargets.Count - 1 - gotoTargetIndex] - position;
-            float distance = Vector2.Distance(position, gotoTargets[gotoTargets.Count - 1 - gotoTargetIndex]);
-            distance = distance < travelDistanceLimit - travelDistance ? distance : travelDistanceLimit - travelDistance;
-
-            tarDir.Normalize();
-
-            float v1 = (float)Math.Atan2(tarDir.Y, tarDir.X);
-            float v2 = (float)Math.Atan2(dir.Y, dir.X);
-            float angle1 = v1 - v2;
-            float angle2 = v2 - v1;
-            float angleToTarget = angle1;
-            if (angleToTarget > Math.PI)
+            if (gotoTargets.Count > 0)
             {
-                float removeFactor = angleToTarget - (float)Math.PI;
-                angleToTarget = (float)-Math.PI + removeFactor;
-            }
+                manhattanTargets.Clear();
+                Vector2 finalDestination = gotoTargets[0];
+                Vector2 lastPos = position;
+                Vector2 currentMPos = position;
+                List<ManhattanSquare> openList = new List<ManhattanSquare>();
+                List<ManhattanSquare> closedList = new List<ManhattanSquare>();
+                ManhattanSquare first = new ManhattanSquare();
+                int index = -1;
+                first.pos = currentMPos;
+                int manhattanDistance = 100;
+                closedList.Add(first);
+                bool done = false;
 
-            steering = (int)MathHelper.ToDegrees(angleToTarget);
-            steering = -(int)MathHelper.Clamp(steering, -48, 48);
-
-            float x = (tireRowSpacing / Math.Abs((float)Math.Atan(steering)) + tireWidth / 2);
-            float r = (float)Math.Sqrt(x * x + (tireRowSpacing / 2) * (tireRowSpacing / 2));
-            float theta = (distance * reverse) / r;
-
-            if (steering > 0.0f)
-                theta = -theta;
-
-            Quaternion newRotation = rotation * Quaternion.CreateFromAxisAngle(new Vector3(0, 0, 1), theta);
-
-            Vector2 right = new Vector2(1, 0);
-            Vector2 addVector = Vector2.Transform(right, newRotation);
-
-            Vector2 calcPosition = position + addVector * reverse * distance;
-            bool collision = false;
-            for (int i = 0; i < virtualWorldLines.Count; i++)
-            {
-                if (virtualWorldLines[i] == null)
-                    continue;
-                if (lineIntersect(virtualWorldLines[i].Value.start, virtualWorldLines[i].Value.end, position, calcPosition))
+                while(!done)
                 {
-                    collision = true;
-                }
-            }
+                    Rectangle rect = new Rectangle((int)currentMPos.X - manhattanDistance / 2, (int)currentMPos.Y - manhattanDistance / 2, manhattanDistance, manhattanDistance);
+                    if(rect.Contains(finalDestination))
+                    {
+                        bool foundHome = false;
+                        Vector2 parent = Vector2.Zero;
+                        for (int i = 0; i < closedList.Count; i++)
+                        {
+                            if(closedList[i].pos == currentMPos)
+                            {
+                                manhattanTargets.Add(closedList[i].pos);
+                                parent = closedList[i].parent;
+                                break;
+                            }
+                        }
 
-            if(collision)
-            {
-                gotoTargets.Add(position + dir * 50);
+                        Vector2 lastP = manhattanTargets[0];
+                        Vector2 lastDir = manhattanTargets[0] - parent;
+
+                        while (!foundHome)
+                        {
+                            for (int i = 0; i < closedList.Count; i++)
+                            {
+                                if(closedList[i].pos == parent)
+                                {
+                                    Rectangle cRect = new Rectangle((int)closedList[i].pos.X - manhattanDistance / 2, (int)closedList[i].pos.Y - manhattanDistance/2, manhattanDistance, manhattanDistance);
+                                    if (cRect.Contains(position))
+                                    {
+                                        foundHome = true;
+                                        bool remove = true;
+                                        
+                                        for (int j = manhattanTargets.Count -1; j >= 0; j--)
+                                        {
+                                            if(remove)
+                                            {
+                                                manhattanTargets.RemoveAt(j);
+                                            }
+                                            remove = !remove;
+                                        }
+                                        break;
+                                    }
+                                    Vector2 dir = closedList[i].parent - closedList[i].pos;
+                                    
+                                    if (dir.X != lastDir.X && dir.Y != lastDir.Y)
+                                    {
+                                        manhattanTargets.Add(closedList[i].pos);
+                                        lastDir = dir;
+                                    }
+                                    parent = closedList[i].parent;
+                                    
+                                    break;
+                                }
+                            }
+                        }
+                        done = true;
+                        break;
+                    }
+                    Vector2[] directions = new Vector2[4];
+                    directions[0] = new Vector2(currentMPos.X, currentMPos.Y - manhattanDistance);
+                    directions[1] = new Vector2(currentMPos.X + manhattanDistance, currentMPos.Y);
+                    directions[2] = new Vector2(currentMPos.X, currentMPos.Y + manhattanDistance);
+                    directions[3] = new Vector2(currentMPos.X - manhattanDistance, currentMPos.Y);
+                    Vector2 up = currentMPos;
+                    up.Y -= manhattanDistance;
+                    Vector2 right = currentMPos;
+                    right.X += manhattanDistance;
+                    Vector2 down = currentMPos;
+                    down.Y += manhattanDistance;
+                    Vector2 left = currentMPos;
+                    left.X -= manhattanDistance;
+
+                    bool[] colls = new bool[4];
+                    for (int i = 0; i < colls.Length; i++)
+                    {
+                        colls[i] = false;
+                    }
+                    bool cU, cR, cD, cL; 
+                    cU = cR = cD = cL = false;
+
+                    for (int i = 0; i < virtualWorldLines.Count; i++)
+                    {
+                        if (virtualWorldLines[i] == null)
+                            continue;
+
+                        for (int j = 0; j < 4; j++)
+                        {
+                            if(lineIntersect(virtualWorldLines[i].Value.start, virtualWorldLines[i].Value.end, currentMPos, directions[j]))
+                            {
+                                colls[j] = true;
+                            }
+                        }
+                        /*
+                        if(lineIntersect(virtualWorldLines[i].Value.start, virtualWorldLines[i].Value.end, currentMPos, up))
+                        {
+                            cU = true;
+                        }
+
+                        if (lineIntersect(virtualWorldLines[i].Value.start, virtualWorldLines[i].Value.end, currentMPos, right))
+                        {
+                            cR = true;
+                        }
+
+                        if (lineIntersect(virtualWorldLines[i].Value.start, virtualWorldLines[i].Value.end, currentMPos, down))
+                        {
+                            cD = true;
+                        }
+
+                        if (lineIntersect(virtualWorldLines[i].Value.start, virtualWorldLines[i].Value.end, currentMPos, left))
+                        {
+                            cL = true;
+                        }
+                         * */
+                    }
+
+                    for (int i = 0; i < colls.Length; i++)
+                    {
+                        if (!colls[i])
+                        {
+                            ManhattanSquare s = new ManhattanSquare();
+                            s.pos = directions[i];
+                            s.parent = currentMPos;
+                            s.g = closedList[closedList.Count - 1].g + manhattanDistance;
+                            s.h = (int)(Math.Abs(finalDestination.X - directions[i].X) + Math.Abs(finalDestination.Y - directions[i].Y));
+                            s.f = s.g + s.h;
+                            bool inList = false;
+                            for (int j = 0; j < openList.Count; j++)
+                            {
+                                if (openList[j].pos == s.pos)
+                                {
+                                    ManhattanSquare temp = openList[j];
+                                    temp.g = s.g;
+                                    temp.parent = s.parent;
+                                    temp.f = temp.g + temp.h;
+                                    if (temp.f < openList[j].f)
+                                        openList[j] = temp;
+                                    inList = true;
+                                    break;
+                                }
+                            }
+
+                            if (!inList)
+                                openList.Add(s);
+                        }
+                    }
+                    /*
+                    if(!cU)
+                    {
+                        ManhattanSquare s = new ManhattanSquare();
+                        s.pos = up;
+                        s.parent = currentMPos;
+                        s.g = closedList[closedList.Count - 1].g + manhattanDistance;
+                        s.h = (int)(Math.Abs(finalDestination.X - up.X) + Math.Abs(finalDestination.Y - up.Y));
+                        s.f = s.g + s.h;
+                        bool inList = false;
+                        for (int i = 0; i < openList.Count; i++)
+                        {
+                            if (openList[i].pos == s.pos)
+                            {
+                                ManhattanSquare temp = openList[i];
+                                temp.g = s.g;
+                                temp.parent = s.parent;
+                                temp.f = temp.g + temp.h;
+                                if (temp.f < openList[i].f)
+                                    openList[i] = temp;
+                                inList = true;
+                                break;
+                            }
+                        }
+
+                        if (!inList)
+                            openList.Add(s);
+                    }
+                    if (!cR)
+                    {
+                        ManhattanSquare s = new ManhattanSquare();
+                        s.pos = right;
+                        s.parent = currentMPos;
+                        s.g = closedList[closedList.Count - 1].g + manhattanDistance;
+                        s.h = (int)(Math.Abs(finalDestination.X - right.X) + Math.Abs(finalDestination.Y - right.Y));
+                        s.f = s.g + s.h;
+                        bool inList = false;
+                        for (int i = 0; i < openList.Count; i++)
+                        {
+                            if (openList[i].pos == s.pos)
+                            {
+                                ManhattanSquare temp = openList[i];
+                                temp.g = s.g;
+                                temp.parent = s.parent;
+                                temp.f = temp.g + temp.h;
+                                if(temp.f < openList[i].f)
+                                    openList[i] = temp;
+                                inList = true;
+                                break;
+                            }
+                        }
+
+                        if (!inList)
+                            openList.Add(s);
+                    }
+                    if (!cD)
+                    {
+                        ManhattanSquare s = new ManhattanSquare();
+                        s.pos = down;
+                        s.parent = currentMPos;
+                        s.g = closedList[closedList.Count - 1].g + manhattanDistance;
+                        s.h = (int)(Math.Abs(finalDestination.X - down.X) + Math.Abs(finalDestination.Y - down.Y));
+                        s.f = s.g + s.h;
+                        bool inList = false;
+                        for (int i = 0; i < openList.Count; i++)
+                        {
+                            if (openList[i].pos == s.pos)
+                            {
+                                ManhattanSquare temp = openList[i];
+                                temp.g = s.g;
+                                temp.parent = s.parent;
+                                temp.f = temp.g + temp.h;
+                                if (temp.f < openList[i].f)
+                                    openList[i] = temp;
+                                inList = true;
+                                break;
+                            }
+                        }
+
+                        if (!inList)
+                            openList.Add(s);
+                    }
+                    if (!cL)
+                    {
+                        ManhattanSquare s = new ManhattanSquare();
+                        s.pos = left;
+                        s.parent = currentMPos;
+                        s.g = closedList[closedList.Count - 1].g + manhattanDistance;
+                        s.h = (int)(Math.Abs(finalDestination.X - left.X) + Math.Abs(finalDestination.Y - left.Y));
+                        s.f = s.g + s.h;
+                        bool inList = false;
+                        for (int i = 0; i < openList.Count; i++)
+                        {
+                            if (openList[i].pos == s.pos)
+                            {
+                                ManhattanSquare temp = openList[i];
+                                temp.g = s.g;
+                                temp.parent = s.parent;
+                                temp.f = temp.g + temp.h;
+                                if (temp.f < openList[i].f)
+                                    openList[i] = temp;
+                                inList = true;
+                                break;
+                            }
+                        }
+
+                        if (!inList)
+                            openList.Add(s);
+                    }
+                    */
+                    int lowest = 99999;
+                    for (int i = 0; i < openList.Count; i++)
+                    {
+                        if(openList[i].f < lowest)
+                        {
+                            lowest = openList[i].f;
+                            index = i;
+                        }
+                    }
+
+                    currentMPos = openList[index].pos;
+                    closedList.Add(openList[index]);
+                    openList.RemoveAt(index);
+                }    
             }
+               
         }
 
         private void InternalScan(GameTime gameTime)
         {
-            if (sensorLeft)
+            if (sensorLeft) //move sensor to the left... or to the right
                 sensor.SetRotationTarget((float)(Math.PI / scanSteps) * (float)scanIndex - MathHelper.PiOver2);
             else
                 sensor.SetRotationTarget((float)(MathHelper.PiOver2 - (Math.PI / scanSteps) * (float)scanIndex));
-            sensor.Update(gameTime);
-            if(!sensor.Rotating())
+            sensor.Update(gameTime); //update the sensor, it might move
+            if(!sensor.Rotating()) //if the sensor isnt moving then we can measure the distance
             {
                 float? sensorValue = SensorDected();
                 if (sensorValue != null)
-                    detectAny = true;
 
                 if (sensorValue != null)
                 {
-                    if (scanIndex < scanSteps / 2)
+                    if (scanIndex < scanSteps / 2) //check how many values are to the left and to the right of current heading
                     {
                         if (sensorLeft)
                             collLeft++;
@@ -532,16 +801,21 @@ namespace CarSimulator
                         else
                             collLeft++;
                     }
+
+                    if(scanIndex >= 18 && scanIndex <= 22) //used to check if the car will hit anything
+                    {
+                        if(sensorValue.Value <= 100.0f)
+                            collisionPathDetected = true;
+                    }
                 }
-                AddVirtualLine(sensorValue);
+                AddVirtualLine(sensorValue); //add a line using sensor readings
                 scanIndex++;
-                if (scanIndex >= scanSteps+1)
+                if (scanIndex >= scanSteps+1) //done scanning
                 {
                     travelDistance = 0;
                     //travelDistanceLimit = (detectAny ? 50.0f : 100.0f);
                     scanIndex = 0;
                     sensorLeft = !sensorLeft;
-                    detectAny = false;
                 }
             }
         }
@@ -566,54 +840,61 @@ namespace CarSimulator
             return returnValue;
         }
 
-        private void CheckCollision(float rotation, float distance)
+        private void CheckCollision(float rotation, float distance) //used to see if the car will collide with objects
         {
-            float newRot = rotation;
-            float newDist = distance;
+            float newRot = rotation; //current path
+            float newDist = distance; //distance along path to current target
             bool pointAdded = false;
             int nChecks = 0;
+
+            
             while (!pointAdded)
             {
-                Vector2 newDir = new Vector2((float)Math.Cos(newRot), (float)Math.Sin(newRot));
+                Vector2 newDir = new Vector2((float)Math.Cos(newRot), (float)Math.Sin(newRot)); //calc new direction of car
                 bool collision = false;
                 float smallestDist = float.MaxValue;
-                for (int i = 0; i < virtualWorldLines.Count; i++)
+                for (int i = 0; i < virtualWorldLines.Count; i++) //check against every object
                 {
                     if (virtualWorldLines[i] == null)
                         continue;
                     if (lineIntersect(virtualWorldLines[i].Value.start, virtualWorldLines[i].Value.end, position, position + newDir * newDist))
                     {
+                        //if we collide with something along that path
                         collision = true;
                         float d1 = Vector2.Distance(position, virtualWorldLines[i].Value.start);
                         float d2 = Vector2.Distance(position, virtualWorldLines[i].Value.end);
                         float s = d1 < d2 ? d1 : d2;
-                        smallestDist = smallestDist < s ? smallestDist : s;
+                        smallestDist = smallestDist < s ? smallestDist : s; //store the smallest distance to the collision point
                     }
                 }
-                if (collision)
+                if (collision) //if the car will collide with anything the car should try to avoid it!
                 {
-                    if (collLeft < collRight)
-                        newRot -= (float)Math.PI / 16;
+                    //depending on how many collision readings to the left or to the right of the car
+                    //the car will choose a new direction towards the area with the least collisions
+                    if (collLeft < collRight)  
+                        newRot -= (float)Math.PI / 16; //new direction will be +- 11.25 degress
                     else
                         newRot += (float)Math.PI / 16;
-                    newDist = smallestDist;
-                    travelDistanceLimit = 50.0f;
+                    newDist = smallestDist; //check as fars as the last collision was
+                    travelDistanceLimit = 50.0f; //but only drive for 50 units, experimental value
                     nChecks++;
                 }
                 else if (newRot != rotation)
                 {
-                    gotoTargets.Add(position + newDir * (newDist - newDist / 1.25f));
+                    //no collision but at somepoint the car found a collision since the rotation value is different from its current, add a new target
+                    //gotoTargets.Add(position + newDir * (newDist - newDist / 1.25f));
                     pointAdded = true;
                 }
                 else
                 {
+                    //no collision at current path!
                     for (int i = 0; i < virtualWorldLines.Count; i++)
                     {
                         if (virtualWorldLines[i] == null)
                             continue;
-                        if (lineIntersect(virtualWorldLines[i].Value.start, virtualWorldLines[i].Value.end, position, gotoTargets[gotoTargets.Count -1]))
+                        if (lineIntersect(virtualWorldLines[i].Value.start, virtualWorldLines[i].Value.end, position, gotoTargets[gotoTargets.Count - 1]))
                         {
-                            gotoTargets.Add(position + newDir * 150);
+                            //gotoTargets.Add(position + newDir * 150);
                             break;
                         }
                     }
@@ -638,6 +919,42 @@ namespace CarSimulator
             sensor.SetCollDistance(returnValue);
 
             return returnValue;
+        }
+
+        private void TurnAround()
+        {
+            turnAround = true;
+            stop = true;
+            travelDistance = 0;
+        }
+
+        private void InternalTurnAround()
+        {
+            if(turnAround)
+            {
+                if(stop)
+                {
+                    acceleration = 0;
+                    if (speed == 0)
+                    {
+                        stop = false;
+                        reverse = -reverse;
+                    }
+                    return;
+                }
+                steering = lastTurnDir == 0 ? 0 : lastTurnDir == 1 ? -48 : 48;
+
+                acceleration = 2;
+
+                if(travelDistance >= 100.0f)
+                {
+                    acceleration = 0;
+                    steering = 0;
+                    reverse = -reverse;
+                    turnAround = false;
+                }
+
+            }
         }
 
         private bool lineIntersect(Vector2 p0Start, Vector2 p0End, Vector2 p1Start, Vector2 p1End)
@@ -726,14 +1043,19 @@ namespace CarSimulator
             rotation = rotation * Quaternion.CreateFromAxisAngle(new Vector3(0, 0, 1), theta);
 
             Vector2 right = new Vector2(1, 0);
-            Vector2 addVector = Vector2.Transform(right, rotation);
+            //Vector2 addVector = Vector2.Transform(right, rotation);
+            Vector2 addVector;
+           
 
             rotRad += theta;
+
+            addVector.X = (float)Math.Cos(rotRad);
+            addVector.Y = (float)Math.Sin(rotRad);
 
             position += addVector * speed * reverse * dt;
 
             if (autonomous)
-                travelDistance += speed * reverse * dt;
+                travelDistance += Math.Abs(speed * reverse * dt);
 
             lineListDistance += speed * dt;
             sensor.SetPosition(position);
@@ -759,13 +1081,19 @@ namespace CarSimulator
                     AddVirtualPoint(sensorValue.Value);
                 }
             }
-            else if(!autonomous)
+            else if(goHome)
             {
                 InternalGoHome(gameTime);
             }
             else
             {
+                saveStates(gameTime);
                 AutonomousUpdate(gameTime);
+                if (lineListDistance >= 5)
+                {
+                    lineListDistance -= 5;
+                    lineList.Add(new Vector2(position.X, position.Y));
+                }
             }
              
             UpdatePosition(gameTime);
@@ -821,10 +1149,16 @@ namespace CarSimulator
                     spriteBatch.Draw(texture, new Rectangle((int)gotoTargets[i].X - 10, (int)gotoTargets[i].Y - 10, 20, 20), Color.DarkMagenta);
                 }
 
+                for (int i = 0; i < manhattanTargets.Count; i++)
+                {
+                    spriteBatch.Draw(texture, new Rectangle((int)manhattanTargets[i].X - 10, (int)manhattanTargets[i].Y - 10, 20, 20), Color.Orange);
+                }
+
+                /*
                 for (int i = 0; i < passiveSensors.Length; i++)
                 {
                     passiveSensors[i].Draw(spriteBatch);
-                }
+                }*/
             }
             sensor.Draw(spriteBatch);
             

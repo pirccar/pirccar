@@ -20,6 +20,7 @@ namespace CarSimulator
         SpriteBatch spriteBatch;
         Input input;
         Car car;
+        Vector2 spawnPos;
         bool gear;
         Texture2D basicTexture;
         SpriteFont font;
@@ -41,15 +42,17 @@ namespace CarSimulator
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
-            graphics.PreferredBackBufferWidth = 1000;
+            graphics.PreferredBackBufferWidth = 1600;
+            graphics.PreferredBackBufferHeight = 800;
             graphics.ApplyChanges();
             input = new Input();
             gear = true;
+            spawnPos = new Vector2(150, 400);
             basicTexture = new Texture2D(GraphicsDevice, 1, 1);
             basicTexture.SetData(new Color[] {Color.White});
-            car = new Car(new Vector2(200, 300) ,basicTexture);
+            car = new Car(spawnPos, basicTexture);
             targets  = new List<Vector2>();
-            targets.Add(new Vector2(800, 300));
+            targets.Add(new Vector2(900, 250));
             //targets.Add(new Vector2(50, 300));
             //targets.Add(new Vector2(900, 450));
             
@@ -136,7 +139,7 @@ namespace CarSimulator
 
 
             spriteBatch.Begin();
-            spriteBatch.Draw(basicTexture, new Rectangle(200 - 25, 300 - 20, 50, 40), Color.Blue);
+            spriteBatch.Draw(basicTexture, new Rectangle((int)spawnPos.X - 25, (int)spawnPos.Y - 20, 50, 40), Color.Blue);
             for (int i = 0; i < targets.Count; i++)
             {
                 spriteBatch.Draw(basicTexture, new Rectangle((int)targets[i].X - 25, (int)targets[i].Y - 20, 50, 40), Color.Green);

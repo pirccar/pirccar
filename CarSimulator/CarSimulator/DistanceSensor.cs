@@ -40,6 +40,11 @@ namespace CarSimulator
             this.rotation = rotation;
         }
 
+        public void SetInternalRotation(float rotation)
+        {
+            this.internalRotation = rotation;
+        }
+
         public void SetCollDistance(float? dist)
         {
             if (dist == null)
