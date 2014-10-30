@@ -66,10 +66,8 @@ namespace CarSimulator
         bool sensorLeft;
         bool collisionPathDetected;
         bool scanning;
-        float previousPassiveValue;
         int collLeft;
         int collRight;
-        int lastTurnDir;
         Vector2? lineStart;
         Vector2? lineEnd;
 
@@ -417,7 +415,6 @@ namespace CarSimulator
 
         private void AutonomousUpdate(GameTime gameTime)
         {
-            float? passive = CheckPasiveSensors();
             if (gotoTargets.Count == 0) //indicates that there are not more targets to go to, car is done
             {
                 acceleration = 0;
@@ -437,7 +434,6 @@ namespace CarSimulator
                 InternalTurnAround();
             }
             else if (scanning || travelDistance >= travelDistanceLimit) //if the car is scanning the enviroment
-            //else if (scanning || (passive != previousPassiveValue && passive != null && passive.Value <= 250.0f))
             {
                 acceleration = 0; //stop the car
                 scanning = true;
@@ -469,7 +465,7 @@ namespace CarSimulator
             }
             else //if(gotoTargetIndex != -1) //the car is moving towards a target
             {
-                if(CheckPassiveSensorsBool())
+                if(CheckPassiveSensors())
                 {
                     collisionPathDetected = true;
                     travelDistanceLimit = 0;
@@ -488,11 +484,9 @@ namespace CarSimulator
 
                 float v1 = (float)Math.Atan2(tarDir.Y, tarDir.X);
                 float v2 = (float)Math.Atan2(dir.Y, dir.X);
-                float angle1 = v1 - v2;
-                float angle2 = v2 - v1;
-                float angleToTarget = angle1; //the angle to the target in radians
+                float angleToTarget = v1 - v2; //the angle to the target in radians
 
-                while(angleToTarget > Math.PI ||angleToTarget < -Math.PI)
+                while(angleToTarget > Math.PI || angleToTarget < -Math.PI)
                 {
                     if(angleToTarget > Math.PI)
                     {
@@ -509,27 +503,20 @@ namespace CarSimulator
                 steering = (int)MathHelper.ToDegrees(angleToTarget); //set steering
                 steering = -(int)MathHelper.Clamp(steering, -48, 48); //and clamp it, car cant turn at 180 degree angles
 
-                lastTurnDir = steering > 0 ? 1 : steering < 0 ? -1 : 0;
-
                 if (manhattanTargets.Count > 0 && distance > 100)
                     distance = Vector2.Distance(position, manhattanTargets[manhattanTargets.Count - 1]);
 
                 CalculateSpeed(distance < travelDistanceLimit - travelDistance ? distance : travelDistanceLimit - travelDistance); //calculate speed
-                //CalculateSpeed(distance);
                 if(distance <= 15.0f && manhattanTargets.Count <= 1) //close enough to target, lets goto next target
                 {
                     gotoTargets.RemoveAt(gotoTargets.Count - 1);
-                    //gotoTargetIndex++;
                     travelDistanceLimit = 0;
                 }
                 else if(distance <= 30.0f && manhattanTargets.Count >= 1)
                 {
                     manhattanTargets.RemoveAt(manhattanTargets.Count - 1);
-                    //travelDistanceLimit = 0;
                 }
             }
-
-            previousPassiveValue = passive.HasValue ? passive.Value : 0; //not used right now
         }
 
         private void ManhattanCalculation() //calculate path to target
@@ -569,7 +556,6 @@ namespace CarSimulator
                             }
                         }
 
-                        Vector2 lastP = manhattanTargets[0];
                         Vector2 lastDir = manhattanTargets[0] - parent;
 
                         while (!foundHome) //as long as we haven't found our start location
@@ -698,7 +684,7 @@ namespace CarSimulator
                                     continue;
                                 Vector2 start = new Vector2(s.pos.X - manhattanDistanceVector.X, s.pos.Y - manhattanDistanceVector.Y);
                                 Vector2 end = new Vector2(s.pos.X + manhattanDistanceVector.X, s.pos.Y + manhattanDistanceVector.Y);
-                                if (lineIntersect(virtualWorldLines[i].Value.start, virtualWorldLines[i].Value.end, start, end))
+                                if (lineIntersect(virtualWorldLines[j].Value.start, virtualWorldLines[j].Value.end, start, end))
                                 {
                                     colls[i] = true;
                                     inList = true;
@@ -738,7 +724,6 @@ namespace CarSimulator
             if(!sensor.Rotating()) //if the sensor isnt moving then we can measure the distance
             {
                 float? sensorValue = SensorDected();
-                if (sensorValue != null)
 
                 if (sensorValue != null)
                 {
@@ -756,46 +741,19 @@ namespace CarSimulator
                         else
                             collLeft++;
                     }
-                    /*
-                    if (scanIndex >= scanSteps / 2 - 4 && scanIndex <= scanSteps / 2 + 4) //used to check if the car will hit anything
-                    {
-                        if(sensorValue.Value <= 100.0f)
-                            collisionPathDetected = true;
-                    }*/
                 }
                 AddVirtualLine(sensorValue); //add a line using sensor readings
                 scanIndex++;
                 if (scanIndex >= scanSteps+1) //done scanning
                 {
                     travelDistance = 0;
-                    //travelDistanceLimit = (detectAny ? 50.0f : 100.0f);
                     scanIndex = 0;
                     sensorLeft = !sensorLeft;
                 }
             }
         }
 
-        private float? CheckPasiveSensors()
-        {
-            float? returnValue = null;
-            
-            for (int i = 0; i < passiveSensors.Length; i++)
-            {
-                passiveSensors[i].SetPosition(position);
-                passiveSensors[i].SetDirection(rotRad);
-                for (int j = 0; j < realObjects.Count; j++)
-                {
-                    float? sensorValue = passiveSensors[i].Intersect(realObjects[j].GetRectangle());
-                    if (returnValue == null || sensorValue < returnValue)
-                        returnValue = sensorValue;
-                }
-                passiveSensors[i].SetCollDistance(returnValue);
-            }
-
-            return returnValue;
-        }
-
-        private bool CheckPassiveSensorsBool()
+        private bool CheckPassiveSensors()
         {
             bool returnValue = false;
 
@@ -845,67 +803,27 @@ namespace CarSimulator
 
         private void CheckCollision(float rotation, float distance) //used to see if the car will collide with objects
         {
-            float newRot = rotation; //current path
-            float newDist = distance; //distance along path to current target
-            bool pointAdded = false;
-            int nChecks = 0;
-
-            
-            while (!pointAdded)
+            Vector2 newDir = new Vector2((float)Math.Cos(rotation), (float)Math.Sin(rotation)); //calc new direction of car
+            bool collision = false;
+            for (int i = 0; i < virtualWorldLines.Count; i++) //check against every object
             {
-                Vector2 newDir = new Vector2((float)Math.Cos(newRot), (float)Math.Sin(newRot)); //calc new direction of car
-                bool collision = false;
-                float smallestDist = float.MaxValue;
-                for (int i = 0; i < virtualWorldLines.Count; i++) //check against every object
+                if (virtualWorldLines[i] == null)
+                    continue;
+                if (lineIntersect(virtualWorldLines[i].Value.start, virtualWorldLines[i].Value.end, position, position + newDir * distance))
                 {
-                    if (virtualWorldLines[i] == null)
-                        continue;
-                    if (lineIntersect(virtualWorldLines[i].Value.start, virtualWorldLines[i].Value.end, position, position + newDir * newDist))
-                    {
-                        //if we collide with something along that path
-                        collision = true;
-                        float d1 = Vector2.Distance(position, virtualWorldLines[i].Value.start);
-                        float d2 = Vector2.Distance(position, virtualWorldLines[i].Value.end);
-                        float s = d1 < d2 ? d1 : d2;
-                        smallestDist = smallestDist <= s ? smallestDist : s; //store the smallest distance to the collision point
-                    }
+                    //if we collide with something along that path
+                    collision = true;
+                    break;
                 }
-                if (collision) //if the car will collide with anything the car should try to avoid it!
-                {
-                    //depending on how many collision readings to the left or to the right of the car
-                    //the car will choose a new direction towards the area with the least collisions
-                    if (collLeft < collRight)  
-                        newRot -= (float)Math.PI / 16; //new direction will be +- 11.25 degress
-                    else
-                        newRot += (float)Math.PI / 16;
-                    newDist = smallestDist; //check as fars as the last collision was
-                    travelDistanceLimit = 100.0f; //but only drive for 50 units, experimental value
-                    nChecks++;
-                }
-                else if (newRot != rotation)
-                {
-                    //no collision but at somepoint the car found a collision since the rotation value is different from its current, add a new target
-                    //gotoTargets.Add(position + newDir * (newDist - newDist / 1.25f));
-                    pointAdded = true;
-                    //travelDistanceLimit = 150;
-                }
-                else
-                {
-                    //no collision at current path!
-                    for (int i = 0; i < virtualWorldLines.Count; i++)
-                    {
-                        if (virtualWorldLines[i] == null)
-                            continue;
-                        if (lineIntersect(virtualWorldLines[i].Value.start, virtualWorldLines[i].Value.end, position, gotoTargets[gotoTargets.Count - 1]))
-                        {
-                            //gotoTargets.Add(position + newDir * 150);
-                            break;
-                        }
-                    }
-                    
-                    pointAdded = true;
-                    travelDistanceLimit = 250.0f;
-                }
+            }
+            if (collision) //if the car will collide with anything the car should try to avoid it!
+            {
+                travelDistanceLimit = 100.0f; //but only drive for X units, experimental value
+            }
+            else
+            {
+                //no collision at current path!
+                travelDistanceLimit = 250.0f;
             }
         }
 
@@ -938,11 +856,6 @@ namespace CarSimulator
         {
             if(turnAround)
             {
-                if(sensorLeft)
-                    steering = collLeft < collRight ? 48 : -48;
-                else
-                    steering = collLeft < collRight ? -48 : 48;
-
                 steering = turnAroundLeft ? -48 : 48;
                 reverse = -1;
                 float dist = 200.0f;
@@ -1164,12 +1077,6 @@ namespace CarSimulator
                 {
                     spriteBatch.Draw(texture, new Rectangle((int)manhattanTargets[i].X - 10, (int)manhattanTargets[i].Y - 10, 20, 20), Color.Orange);
                 }
-
-                /*
-                for (int i = 0; i < passiveSensors.Length; i++)
-                {
-                    passiveSensors[i].Draw(spriteBatch);
-                }*/
             }
             sensor.Draw(spriteBatch);
             
