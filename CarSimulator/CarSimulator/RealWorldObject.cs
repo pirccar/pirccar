@@ -26,7 +26,7 @@ namespace CarSimulator
 
         public void Draw(SpriteBatch spriteBatch)
         {
-            spriteBatch.Draw(texture, rectangle, Color.Red);
+            spriteBatch.Draw(texture, rectangle, Color.DarkGray);
         }
     }
 }

@@ -13,7 +13,7 @@ namespace CarSimulator
         float rotation;
         float internalRotation;
         bool goingRight;
-        float max = 300.0f;
+        float max = 200.0f;
         float collDistance = -1;
         Texture2D texture;
         float roationTarget;

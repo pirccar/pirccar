@@ -11,9 +11,6 @@ using Microsoft.Xna.Framework.GamerServices;
 
 namespace CarSimulator
 {
-    /// <summary>
-    /// This is the main type for your game
-    /// </summary>
     public class Game1 : Game
     {
         GraphicsDeviceManager graphics;
@@ -33,28 +30,22 @@ namespace CarSimulator
             Content.RootDirectory = "Content";
         }
 
-        /// <summary>
-        /// Allows the game to perform any initialization it needs to before starting to run.
-        /// This is where it can query for any required services and load any non-graphic
-        /// related content.  Calling base.Initialize will enumerate through any components
-        /// and initialize them as well.
-        /// </summary>
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
+            Window.Position = new Point(10, 10);
             graphics.PreferredBackBufferWidth = 1600;
-            graphics.PreferredBackBufferHeight = 800;
+            graphics.PreferredBackBufferHeight = 1000;
             graphics.ApplyChanges();
             input = new Input();
             gear = true;
-            spawnPos = new Vector2(150, 400);
+            //spawnPos = new Vector2(150, 400); //trippleRoom spawn
+            spawnPos = new Vector2(150, 800);
             basicTexture = new Texture2D(GraphicsDevice, 1, 1);
             basicTexture.SetData(new Color[] {Color.White});
             car = new Car(spawnPos, basicTexture);
             targets  = new List<Vector2>();
-            targets.Add(new Vector2(900, 250));
-            //targets.Add(new Vector2(50, 300));
-            //targets.Add(new Vector2(900, 450));
+            targets.Add(new Vector2(100, 150)); //trippleRoom target
+            
             
             for (int i = 0; i < targets.Count; i++)
             {
@@ -63,33 +54,17 @@ namespace CarSimulator
             base.Initialize();
         }
 
-        /// <summary>
-        /// LoadContent will be called once per game and is the place to load
-        /// all of your content.
-        /// </summary>
         protected override void LoadContent()
         {
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
             font = Content.Load<SpriteFont>("SpriteFont1");
-
-            // TODO: use this.Content to load your game content here
         }
 
-        /// <summary>
-        /// UnloadContent will be called once per game and is the place to unload
-        /// all content.
-        /// </summary>
         protected override void UnloadContent()
         {
-            // TODO: Unload any non ContentManager content here
         }
 
-        /// <summary>
-        /// Allows the game to run logic such as updating the world,
-        /// checking for collisions, gathering input, and playing audio.
-        /// </summary>
-        /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
             if (Keyboard.GetState().IsKeyDown(Keys.Escape))
@@ -129,10 +104,6 @@ namespace CarSimulator
             base.Update(gameTime);
         }
 
-        /// <summary>
-        /// This is called when the game should draw itself.
-        /// </summary>
-        /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
@@ -150,8 +121,8 @@ namespace CarSimulator
             spriteBatch.DrawString(font, Math.Round(car.GetSteering(), 2).ToString(), new Vector2(650, 5), Color.Black);
             spriteBatch.DrawString(font, Math.Round(car.GetSpeed(),1).ToString(), new Vector2(750, 5), Color.Black);
             spriteBatch.DrawString(font, Math.Round(MathHelper.ToDegrees(car.GetRotation()), 1).ToString(), new Vector2(550, 5), Color.Black);
+            spriteBatch.DrawString(font, car.GetAcceleration().ToString(), new Vector2(850, 5), Color.Black);
             spriteBatch.End();
-            // TODO: Add your drawing code here
 
             base.Draw(gameTime);
         }
