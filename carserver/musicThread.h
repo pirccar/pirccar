@@ -19,6 +19,7 @@ public:
 private:
 	void playTone(int tone, int duration);
 	void playSong();
+	void calculateDistance();
 	bool playTrigger;
 	
 	virtual void init(void);

@@ -12,6 +12,7 @@ class AdcThread : public Thread
 public:
 	AdcThread(void);
 	AdcThread(LcdThread* lcdThread, SendThread* sendThread);
+	void setSendThread(SendThread* sendThread);
 	double getChannel(int channel);
 	
 private:

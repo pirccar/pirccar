@@ -48,16 +48,16 @@ void setPWMOnOff(uint8_t led, int on_value, int off_value){
 	char cmdOffH[2];
 	uint8_t ret = 0;
 	
-	cmdOnL[0] = LED0_ON_L + LED_MULTIPLYER * (led-1);
+	cmdOnL[0] = LED0_ON_L + LED_MULTIPLYER * (led);
 	cmdOnL[1] = on_value & 0xFF;
 	
-	cmdOnH[0] = LED0_ON_H + LED_MULTIPLYER * (led-1);
+	cmdOnH[0] = LED0_ON_H + LED_MULTIPLYER * (led);
 	cmdOnH[1] = on_value >> 8;
 	
-	cmdOffL[0] = LED0_OFF_L + LED_MULTIPLYER * (led-1);
+	cmdOffL[0] = LED0_OFF_L + LED_MULTIPLYER * (led);
 	cmdOffL[1] = off_value & 0xFF;
 	
-	cmdOffH[0] = LED0_OFF_H + LED_MULTIPLYER * (led-1);
+	cmdOffH[0] = LED0_OFF_H + LED_MULTIPLYER * (led);
 	cmdOffH[1] = off_value >> 8;
 	
 	ret = bcm2835_i2c_write((const char*)&cmdOnL, 2);
@@ -98,7 +98,7 @@ int getPWMOn(uint8_t led){
 int getPWMOff(uint8_t led){
 	int val = 0;
 	char buf[MAX_LEN];
-	char addr = LED0_OFF_H + LED_MULTIPLYER * (led-1);
+	char addr = LED0_OFF_H + LED_MULTIPLYER * (led);
 	
 	bcm2835_i2c_read_register_rs((char*)&addr, (char*)&buf, 1);
 	
@@ -106,7 +106,7 @@ int getPWMOff(uint8_t led){
 	val = val & 0xf;
 	val <<= 8;
 	
-	addr = LED0_OFF_L + LED_MULTIPLYER * (led-1);
+	addr = LED0_OFF_L + LED_MULTIPLYER * (led);
 	
 	bcm2835_i2c_read_register_rs((char*)&addr, (char*)&buf, 1);
 	

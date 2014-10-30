@@ -1,4 +1,4 @@
-
+#include <stdint.h>
 #ifndef _pca9685_H
 #define _pca9685_H
 

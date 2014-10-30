@@ -159,6 +159,78 @@ adcthread.cpp.s:
 	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/adcthread.cpp.s
 .PHONY : adcthread.cpp.s
 
+algebra.o: algebra.cpp.o
+.PHONY : algebra.o
+
+# target to build an object file
+algebra.cpp.o:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/algebra.cpp.o
+.PHONY : algebra.cpp.o
+
+algebra.i: algebra.cpp.i
+.PHONY : algebra.i
+
+# target to preprocess a source file
+algebra.cpp.i:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/algebra.cpp.i
+.PHONY : algebra.cpp.i
+
+algebra.s: algebra.cpp.s
+.PHONY : algebra.s
+
+# target to generate assembly for a file
+algebra.cpp.s:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/algebra.cpp.s
+.PHONY : algebra.cpp.s
+
+autoHome.o: autoHome.cpp.o
+.PHONY : autoHome.o
+
+# target to build an object file
+autoHome.cpp.o:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/autoHome.cpp.o
+.PHONY : autoHome.cpp.o
+
+autoHome.i: autoHome.cpp.i
+.PHONY : autoHome.i
+
+# target to preprocess a source file
+autoHome.cpp.i:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/autoHome.cpp.i
+.PHONY : autoHome.cpp.i
+
+autoHome.s: autoHome.cpp.s
+.PHONY : autoHome.s
+
+# target to generate assembly for a file
+autoHome.cpp.s:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/autoHome.cpp.s
+.PHONY : autoHome.cpp.s
+
+autonomous.o: autonomous.cpp.o
+.PHONY : autonomous.o
+
+# target to build an object file
+autonomous.cpp.o:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/autonomous.cpp.o
+.PHONY : autonomous.cpp.o
+
+autonomous.i: autonomous.cpp.i
+.PHONY : autonomous.i
+
+# target to preprocess a source file
+autonomous.cpp.i:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/autonomous.cpp.i
+.PHONY : autonomous.cpp.i
+
+autonomous.s: autonomous.cpp.s
+.PHONY : autonomous.s
+
+# target to generate assembly for a file
+autonomous.cpp.s:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/autonomous.cpp.s
+.PHONY : autonomous.cpp.s
+
 camera.o: camera.cpp.o
 .PHONY : camera.o
 
@@ -534,6 +606,15 @@ help:
 	@echo "... adcthread.o"
 	@echo "... adcthread.i"
 	@echo "... adcthread.s"
+	@echo "... algebra.o"
+	@echo "... algebra.i"
+	@echo "... algebra.s"
+	@echo "... autoHome.o"
+	@echo "... autoHome.i"
+	@echo "... autoHome.s"
+	@echo "... autonomous.o"
+	@echo "... autonomous.i"
+	@echo "... autonomous.s"
 	@echo "... camera.o"
 	@echo "... camera.i"
 	@echo "... camera.s"

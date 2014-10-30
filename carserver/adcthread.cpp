@@ -13,6 +13,11 @@ AdcThread::AdcThread(LcdThread* lcdThread, SendThread* sendThread)
 	this->sendThread = sendThread;
 }
 
+void AdcThread::setSendThread(SendThread* sendThread)
+{
+	this->sendThread = sendThread;
+}
+
 void AdcThread::mainLoop(void)
 {
 	channel0 = readADCValue(0);
@@ -28,11 +33,13 @@ void AdcThread::mainLoop(void)
 	lcdThread->setChannel(0, channel0);
 	lcdThread->setChannel(2, channel2);
 	
-	sendThread->setChannel(0, channel0S);
-	sendThread->setChannel(1, channel1S);
-	sendThread->setChannel(2, channel2S);
-	sendThread->setChannel(3, channel3S);
-	
+	if(sendThread != NULL)
+	{
+		sendThread->setChannel(0, channel0S);
+		sendThread->setChannel(1, channel1S);
+		sendThread->setChannel(2, channel2S);
+		sendThread->setChannel(3, channel3S);
+	}
 	sleep(3);
 }
 

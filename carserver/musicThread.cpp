@@ -14,7 +14,29 @@ void MusicThread::mainLoop(void)
 		playSong();
 		playTrigger = false;
 	}
-	
+}
+
+void MusicThread::init(void)
+{
+	bcm2835_gpio_fsel(SPEAKER, BCM2835_GPIO_FSEL_OUTP);
+	bcm2835_gpio_fsel(TRIGGER, BCM2835_GPIO_FSEL_OUTP);
+	bcm2835_gpio_fsel(ECH, BCM2835_GPIO_FSEL_INPT);
+	//bcm2835_gpio_set_pud(ECH, BCM2835_GPIO_PUD_UP);
+	playTrigger = false;
+}
+
+void MusicThread::cleanup(void)
+{
+	playTrigger = false;
+}
+
+void MusicThread::play()
+{
+	playTrigger = true;
+}
+
+void MusicThread::calculateDistance()
+{
 	struct timeval start, end;
 	long mtime, seconds, useconds;
 	bcm2835_gpio_write(TRIGGER, LOW);
@@ -43,25 +65,6 @@ void MusicThread::mainLoop(void)
 	float distance = (totSec * 17150);
 	
 	printf("Distance: %f cm\n", distance);
-}
-
-void MusicThread::init(void)
-{
-	bcm2835_gpio_fsel(SPEAKER, BCM2835_GPIO_FSEL_OUTP);
-	bcm2835_gpio_fsel(TRIGGER, BCM2835_GPIO_FSEL_OUTP);
-	bcm2835_gpio_fsel(ECH, BCM2835_GPIO_FSEL_INPT);
-	//bcm2835_gpio_set_pud(ECH, BCM2835_GPIO_PUD_UP);
-	playTrigger = false;
-}
-
-void MusicThread::cleanup(void)
-{
-	playTrigger = false;
-}
-
-void MusicThread::play()
-{
-	playTrigger = true;
 }
 	
 void MusicThread::playTone(int tone, int duration)

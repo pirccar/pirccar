@@ -3,6 +3,15 @@
 SendThread::SendThread(void)
 : Thread()
 {
+	gpsComport = 22;
+	gpsBaud = 9600;
+	
+	serial_command_len = 0;
+	stabilized = prev_stab_state = false;
+	
+	sendfailcounter = 0;
+	start_time = 0;
+	sendNewState = false;
 }
 
 SendThread::SendThread(std::string ip)
@@ -78,6 +87,18 @@ void SendThread::setChannel(int channel, std::string value)
 		chann3String = value;
 }
 
+void SendThread::addState(AutoHomeData state)
+{
+	states.push_back(state);
+	sendNewState = true;
+}
+
+void SendThread::currentCheckpoint(int checkpoint)
+{
+	sendNewCheckpoint = true;
+	this->checkpoint = checkpoint;
+}
+
 void SendThread::readBattery()
 {
 	//Send battery info
@@ -111,7 +132,7 @@ bool SendThread::readCamera()
 	else
 	{
 		sendfailcounter++;
-		//printf("internal sendfail: %d \n", sendfailcounter);
+		printf("internal sendfail: %d \n", sendfailcounter);
 		usleep(5000);
 		
 		if(sendfailcounter > 150)
@@ -217,6 +238,7 @@ void SendThread::readGPS()
 void SendThread::readStabilized()
 {
 	//Unstable / stable connection
+	/*
 	if(prev_stab_state && !stabilized)
 	{
 		clock_gettime(CLOCK_REALTIME, &now);
@@ -234,7 +256,7 @@ void SendThread::readStabilized()
 			printf("connection stablilized \n");
 		}
 	}
-	
+	*/
 	//let the client know about the connection status
 	if(stableCount >= 24)
 	{
@@ -325,12 +347,55 @@ void SendThread::compressAndSend(unsigned char imageBuffer[])
 	delete[] mem;
 }
 
+void SendThread::sendState()
+{
+	if(sendNewState)
+	{
+		for(int i = 0; i < states.size(); i++)
+		{
+			std::ostringstream ss;
+			ss << states[i].distance;
+			ss << ":";
+			ss << states[i].servos[0];
+			ss << ":";
+			ss << states[i].servos[2];
+			std::string s(ss.str());
+			std::string sendStr = "HOME:" + s;
+			const char* send = sendStr.c_str();
+			printf("%s\n", send);
+			if(socket.write(send) != sendStr.length())
+			{
+				printf("UDP sendfail\n");
+			}
+		}
+		states.clear();
+		sendNewState = false;
+	}
+}
+
+void SendThread::sendCheckpoint()
+{
+	if(sendNewCheckpoint)
+	{
+		std::ostringstream ss;
+		ss << checkpoint;
+		std::string s(ss.str());
+		std::string sendStr = "CHK:" + s;
+		const char* send = sendStr.c_str();
+		
+		if(socket.write(send) != sendStr.length())
+		{
+			printf("Sendfail checkpoint\n");
+		}
+		sendNewCheckpoint = false;
+	}
+}
+
 void SendThread::init(void)
 {
 	socket = Socket(isUdp, true, 8002);
 	socket.initialize();
 	socket.connect(ip);
-	
 	
 	cam = CameraWrapper();
 	cam.setWidthHeight(imageWidth, imageHeight);
@@ -350,7 +415,8 @@ void SendThread::init(void)
 	sendfailcounter = 0;
 	clock_gettime(CLOCK_REALTIME, &now);
 	start_time = now.tv_sec;
-	
+	sendNewState = false;
+	sendNewCheckpoint = false;
 	sleep(3);
 }
 
@@ -363,6 +429,8 @@ void SendThread::mainLoop(void)
 		readStabilized();
 		readGear();
 		//readGPS();
+		sendState();
+		sendCheckpoint();
 	}
 	else
 	{

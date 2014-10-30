@@ -10,6 +10,7 @@
 #include <signal.h>
 #include <vector>
 #include <math.h>
+#include <sys/time.h>
 
 //#define _GNU_SOURCE
 #include <sys/socket.h>
@@ -25,6 +26,7 @@
 #include "servocontrol.h"
 #include "servocontrolthread.h"
 #include "musicThread.h"
+#include "autoHome.h"
 #include <jpeglib.h>
 
 #include "pca9685.h"
@@ -51,15 +53,18 @@ int imageWidth;
 int imageHeight;
 int imageQuality;
 
-int throttleFChannel = 3;
-int throttleBChannel = 4;
+int throttleChannel = 3;
 int gearChannel = -1;
+int steeringFChannel = -1;
+int steeringBChannel = -1;
 
 sig_atomic_t alarm_counter;
-int recTime = 10;
+int recTime = 3;
 bool stabilized = false;
 bool udpSend = true;
 int sendFailCounter = 0;
+bool firstRun = true;
+struct timeval lastMsgTime;
 
 double chann0Double;
 double chann1Double;
@@ -69,6 +74,9 @@ std::string chann0String;
 std::string chann1String;
 std::string chann2String;
 std::string chann3String;
+
+AutoHome autoHome;
+int lastAutoHomeIndex;
 
 
 // pin setup
@@ -96,7 +104,7 @@ int parseMessage(char buf[], int size){
 	}
 	else if(buf[0] == 'C') //Is config
 	{
-		if(size < 16)
+		if(size < 19)
 		{
 			printf("Incomplete config \n");
 			printf("Got: %s \n", buf);
@@ -113,48 +121,54 @@ int parseMessage(char buf[], int size){
 		id[0] = buf[1];
 		id[1] = buf[2];
 		id[2] = '\0';
-		throttleFChannel = atoi(id);
-		printf("Setting throttle to channel %d \n", throttleFChannel);
-		
-		id[0] = buf[3];
-		id[1] = buf[4];
-		id[2] = '\0';
-		throttleBChannel = atoi(id);
-		printf("Setting throttle to channel %d \n", throttleBChannel);
+		throttleChannel = atoi(id);
+		printf("Setting throttle to channel %d \n", throttleChannel);
 		
 		//Gear
-		id[0] = buf[5];
-		id[1] = buf[6];
+		id[0] = buf[3];
+		id[1] = buf[4];
 		id[2] = '\0';
 		gearChannel = atoi(id);
 		printf("Setting gearChannel to channel %d \n", gearChannel);
 		
-		format[0] = buf[7];
-		format[1] = buf[8];
-		format[2] = buf[9];
-		format[3] = buf[10];
+		id[0] = buf[5];
+		id[1] = buf[6];
+		id[2] = '\0';
+		steeringFChannel = atoi(id);
+		printf("Setting steeringFChannel to channel %d \n", steeringFChannel);
+		
+		id[0] = buf[7];
+		id[1] = buf[8];
+		id[2] = '\0';
+		steeringBChannel = atoi(id);
+		printf("Setting steeringBChannel to channel %d \n", steeringBChannel);
+		
+		format[0] = buf[9];
+		format[1] = buf[10];
+		format[2] = buf[11];
+		format[3] = buf[12];
 		format[4] = '\0';
 		
 		imageWidth = atoi(format);
 		
-		format[0] = buf[11];
-		format[1] = buf[12];
-		format[2] = buf[13];
-		format[3] = buf[14];
+		format[0] = buf[13];
+		format[1] = buf[14];
+		format[2] = buf[15];
+		format[3] = buf[16];
 		format[4] = '\0';
 		
 		imageHeight = atoi(format);
 		printf("Setting Image format to %dx%d \n", imageWidth, imageHeight);
 		
-		quality[0] = buf[15];
-		quality[1] = buf[16];
-		quality[2] = buf[17];
+		quality[0] = buf[17];
+		quality[1] = buf[18];
+		quality[2] = buf[19];
 		quality[3] = '\0';
 		
 		imageQuality = atoi(quality);
 		printf("Setting image quality to %d \n", imageQuality);
 		
-		if(buf[18] == '1')
+		if(buf[20] == '1')
 		{
 			udpSend = true;
 			printf("Setting to UDP \n");
@@ -166,14 +180,23 @@ int parseMessage(char buf[], int size){
 		}
 		
 		printf("Config was received \n");
+		
+		autoHome.setChannels(steeringFChannel, steeringBChannel, throttleChannel, gearChannel);
 		gotConfig = true;
 	}
 	else if(buf[0] == 'M')
 	{
 		music->play();
 	}
+	else if(buf[0] == 'G' && buf[1] == 'O' && buf[2] == 'H')
+	{
+		autoHome.goHome();
+	}
 	else if(ready){ //is command S010400 = set servo 1 to 400 off
 		//printf("Got servo data \n");
+		
+		if(autoHome.goingHome())
+			return 1;
 		
 		int i = 0;
 		while(i + 7 <= size)
@@ -202,7 +225,7 @@ int parseMessage(char buf[], int size){
 				val[4] = '\0';
 				
 				value = atoi((const char*)&val);
-				if(servo != throttleFChannel || servo != throttleBChannel)
+				if(servo != throttleChannel)
 				{
 					//Steering etc BVA
 					if(value < 130)
@@ -227,9 +250,18 @@ int parseMessage(char buf[], int size){
 				//printf("S: %i, V: %i \n", servo, value);
 				if(allow)
 				{
-					//printf("Setting pwm\n");
+					//printf("Servo: %d Value: %d\n", servo, value);
 					setPWM(servo, value);
 					//printf("pwm set done\n");
+					
+					if(servo == throttleChannel)
+						autoHome.setSpeed(value - 180);
+					else if(servo == steeringFChannel)
+						autoHome.setServoValue(0, value);
+					else if(servo == steeringBChannel)
+						autoHome.setServoValue(1, value);
+					else if(servo == gearChannel)
+						autoHome.setServoValue(2, value);
 				}
 				
 			}
@@ -308,8 +340,8 @@ int main()
 	//pthread_t t1;
 	
 	LcdThread* lcd = new LcdThread();
-	SendThread* sendThread = new SendThread();
-	AdcThread* adc = new AdcThread(lcd, sendThread);
+	SendThread* sendThread; // = new SendThread(); we no longer create the thread here, we will then pass null to adc thread
+	AdcThread* adc = new AdcThread(lcd, NULL);
 	ServoControlThread* servo = new ServoControlThread();
 	music = new MusicThread();
 	
@@ -363,8 +395,10 @@ int main()
 	while(run)
 	{
 //		stopPWM();
-		
+		lastAutoHomeIndex = 0;
+		autoHome.reset();
 		clientLen = sizeof(clientAddr);
+		sendThread = new SendThread(); //create sendthread here instead, it will then recreate itself on every new connect
 		
 		if((clientSocket = accept(serverSocket, (sockaddr*) &clientAddr, &clientLen)) < 0)
 			printf("Accept failed \n");
@@ -378,6 +412,7 @@ int main()
 		lcd->setConnected(globalConnected);
 		sendFailCounter = 0;
 		int recvCounter = 0;
+		adc->setSendThread(sendThread); //here we tell the adcthread about the sendhtread
 		
 		while(connected)
 		{
@@ -385,20 +420,16 @@ int main()
 			bzero(buffer, 256);
 			int recMsgSize;
 			alarm(recTime);
-			//printf("Looping \n");
 			
-			//printf("Reading message \n");
 			if( (recMsgSize = recv(clientSocket, buffer, 255, 0)) < 0){
-				printf("Recv failed \n"); //Indicates that it took more than 1 second to get a message from the client, bad connection
-				stopPWM();
+				printf("Recv failed \n"); //Indicates that it took more than recTime second to get a message from the client, bad connection
+				//stopPWM();
 
 				alarm(0);
-				recTime = 10; //Increase recv timer to 10 seconds
+				recTime = 1; //Increase recv timer to 3 seconds
 				stabilized = false;
-				if(!senderStarted)
-					sendThread->setStabilized(false);
+				sendThread->setStabilized(false);
 				recvCounter++;
-				printf("End of recv failed\n");
 				//break;
 			}
 			else if(recMsgSize == 0)
@@ -407,7 +438,7 @@ int main()
 				connected = false;
 				globalConnected = false;
 				lcd->setConnected(globalConnected);
-				sendThread->setHalted(true);
+				sendThread->setHalted(true); //we should not need to halt anymore as this instance will be removed after this iteration
 				senderStarted = true;
 				//clientSocket = -1;
 				stopPWM();
@@ -415,19 +446,44 @@ int main()
 				break;
 			}
 			else{
-				//printf("parsing message \n");
 				alarm(0);
 				parseMessage(buffer, recMsgSize);
-				//printf("After parsing \n");
 				sendThread->setImageQuality(imageQuality);
 				recvCounter = 0;
+				
+				if(firstRun)
+				{
+					gettimeofday(&lastMsgTime, NULL);
+					firstRun = false;
+				}
+				else
+				{
+					struct timeval now;
+					long seconds, useconds;
+					gettimeofday(&now, NULL);
+					
+					seconds = now.tv_sec - lastMsgTime.tv_sec;
+					useconds = now.tv_usec - lastMsgTime.tv_usec;
+					
+					double totSec = seconds + useconds / 1000000.0;
+					//printf("%f \n", totSec);
+					if(totSec > 1.0)
+						stabilized = false;
+					else
+						stabilized = true;
+					
+					sendThread->setStabilized(stabilized);
+					
+					lastMsgTime = now;
+				}
+				
 				if(stabilized)
 				{
 					recTime = 1;
 				}
 				else
 				{
-					recTime = 10;
+					recTime = 3;
 				}
 				
 				if(gotConfig)
@@ -435,7 +491,6 @@ int main()
 					if(!senderStarted)
 					{
 						printf("Starting sendThread\n");
-						//pthread_create(&t1, NULL, sendThreadUDP, NULL);
 						std::string s(frameIP);
 						sendThread->setUdp(udpSend);
 						sendThread->setTargetIP(s);
@@ -447,9 +502,9 @@ int main()
 						
 						senderStarted = true;
 					}
-					else
+					else //this is probalby deprecated now
 					{
-						printf("initializing sendThread");
+						printf("initializing sendThread\n");
 						std::string s(frameIP);
 						sendThread->setUdp(udpSend);
 						sendThread->setTargetIP(s);
@@ -466,14 +521,13 @@ int main()
 			
 			sendFailCounter = sendThread->getSendfailcounter();
 			
-			//printf("External Sendfail: %d \n", sendFailCounter);
-			if(sendFailCounter >= 150 || recvCounter >= 15)
+			if(sendFailCounter >= 150 || recvCounter >= 150)
 			{
-				printf("Send failed triggered!\n");
+				printf("Send failed triggered! s: %d r: %d\n", sendFailCounter, recvCounter);
 				connected = false;
 				globalConnected = false;
 				senderStarted = false;
-				sendThread->stop();
+				//sendThread->stop();
 				clientSocket = -1;
 				stopPWM();
 			}
@@ -484,31 +538,46 @@ int main()
 			if(val == 0 && ready) //Detected something, stop throttle 
 			{
 				obstructed = true;
-				setPWM(throttleFChannel, 160); //stopping throttle channel
-				setPWM(throttleBChannel, 160); //stopping throttle channel
-				
+				setPWM(throttleChannel, 160); //stopping throttle channel
 			}
 			else
 			{
 				obstructed = false;
 			}
-			//printf("value: %d \n", val);
+			
+			autoHome.update(); //update autohome algorithm
+			int currentHomeIndex = autoHome.getCurrentIndex(); //check if we should send new state to client
+			
+			if(currentHomeIndex != lastAutoHomeIndex && !autoHome.goingHome() && currentHomeIndex != 0)
+			{
+				printf("Index: %d, prev: %d\n", currentHomeIndex, lastAutoHomeIndex);
+				if(autoHome.getCheckpoint(currentHomeIndex-1).distance > 0) //only send this state if the distance is greater than 0, it should be now..
+				{
+					sendThread->addState(autoHome.getCheckpoint(currentHomeIndex-1));
+				}
+				lastAutoHomeIndex = currentHomeIndex;
+			}
+			else if(autoHome.goingHome() && currentHomeIndex != lastAutoHomeIndex) //the car is now moving home, send index to get a reference in the client window
+			{
+				sendThread->currentCheckpoint(currentHomeIndex);
+				lastAutoHomeIndex = currentHomeIndex;
+			}
 		}
 		printf("Leaving connected loop\n");
 		ready = false;
+		sendThread->stop(); //stop the sendthread on disconnect
+		//delete sendThread; //this will create a memory corruption, everything is freed when stop() is called
+		senderStarted = false; // so that the sendthread will start on new instance
 	}
 	stopPWM();
-	//pthread_join(t1, NULL);
 	lcd->stop();
 	adc->stop();
 	sendThread->stop();
 	music->stop();
-	//pthread_join(lcd_thread, NULL);
 	printf("Shutting down \n");
 	delete[] frameIP;
 	delete lcd;
 	delete adc;
-	delete sendThread;
 	bcm2835_close();
 		
 	return 0;

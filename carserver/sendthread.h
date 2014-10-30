@@ -1,8 +1,10 @@
 #pragma once
 #include <stdio.h>
 #include <string.h>
+#include <iostream>
 #include <time.h>
 #include <unistd.h>
+#include <vector>
 
 #include <jpeglib.h>
 
@@ -11,6 +13,7 @@
 #include "thread.h"
 #include "socket.h"
 #include "rs232.h"
+#include "autoHome.h"
 
 class SendThread : public Thread
 {
@@ -27,6 +30,8 @@ public:
 	int getSendfailcounter();
 	void setHalted(bool halted);
 	void setChannel(int channel, std::string value);
+	void addState(AutoHomeData state);
+	void currentCheckpoint(int checkpoint);
 	
 private:
 	Socket socket;
@@ -52,12 +57,19 @@ private:
 	int stableCount;
 	int gearCount;
 	
+	std::vector<AutoHomeData> states;
+	bool sendNewState;
+	bool sendNewCheckpoint;
+	int checkpoint;
+	
 	void readBattery();
 	bool readCamera();
 	void readGear();
 	void readGPS();
 	void readStabilized();
 	void compressAndSend(unsigned char imageBuffer[]);
+	void sendState();
+	void sendCheckpoint();
 	
 	virtual void init(void);
 	virtual void mainLoop(void);
