@@ -22,6 +22,9 @@ namespace CarSimulator
         Texture2D basicTexture;
         SpriteFont font;
         List<Vector2> targets;
+        double startTime;
+        double currentTime;
+        bool lastAutonomousValue;
 
         public Game1()
             : base()
@@ -44,8 +47,9 @@ namespace CarSimulator
             basicTexture.SetData(new Color[] {Color.White});
             car = new Car(spawnPos, basicTexture);
             targets  = new List<Vector2>();
-            targets.Add(new Vector2(100, 150)); //trippleRoom target
-            
+            targets.Add(new Vector2(1000, 150)); //trippleRoom target
+            startTime = -1;
+            currentTime = -1;
             
             for (int i = 0; i < targets.Count; i++)
             {
@@ -93,13 +97,20 @@ namespace CarSimulator
             if (input.buttonDown(Buttons.B))
                 car.Reset();
 
-            if (input.buttonDown(Buttons.LeftShoulder))
+            if (input.buttonDown(Buttons.LeftShoulder) || input.keyDown(Keys.Space))
                 car.ToggleRealWorld();
 
-            if (input.buttonDown(Buttons.Back))
+            if (input.buttonDown(Buttons.Back) || input.keyDown(Keys.A))
                 car.ToggleAutonomous();
 
             car.Update(gameTime);
+
+            if (startTime == -1 && car.IsAutonomous())
+                startTime = gameTime.TotalGameTime.TotalSeconds;
+            else if(car.IsAutonomous() && car.TargetCount() > 0)
+            {
+                currentTime = gameTime.TotalGameTime.TotalSeconds - startTime;
+            }
 
             base.Update(gameTime);
         }
@@ -122,6 +133,7 @@ namespace CarSimulator
             spriteBatch.DrawString(font, Math.Round(car.GetSpeed(),1).ToString(), new Vector2(750, 5), Color.Black);
             spriteBatch.DrawString(font, Math.Round(MathHelper.ToDegrees(car.GetRotation()), 1).ToString(), new Vector2(550, 5), Color.Black);
             spriteBatch.DrawString(font, car.GetAcceleration().ToString(), new Vector2(850, 5), Color.Black);
+            spriteBatch.DrawString(font, currentTime.ToString(), new Vector2(1200, 5), Color.Black);
             spriteBatch.End();
 
             base.Draw(gameTime);

@@ -597,3 +597,10 @@ float DegreeToRadian(float degree)
 
 	return degree * PIOver180;
 }
+
+float RadianToDegree(float radian)
+{
+	float factor = 180 / M_PI;
+	
+	return radian * factor;
+}

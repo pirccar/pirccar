@@ -123,6 +123,7 @@ float HomoLength(HomVector a);
 HomVector HomoNormalize(HomVector a);
 float PlaneDistance(HomVector a, Vector b);
 float DegreeToRadian(float degree);
+float RadianToDegree(float radian);
 float AngleBetweenVectors(Vector a, Vector b);
 
 float Determinant(const Matrix);

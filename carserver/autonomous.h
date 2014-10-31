@@ -31,17 +31,22 @@ public:
 	
 	void update();
 	void toggleAutonomous();
+	void addGotoTarget(Vector target);
 	
 	
 private:
 	void updatePosition();
 	void manhattanCalculation();
 	void calculateSpeed(float distance);
+	void turnAround();
+	void internalTurnAround();
 	bool rectangleContains(float x, float y, int width, int height, Vector target);
 	bool lineIntersect(Vector p0Start, Vector p0End, Vector p1Start, Vector p1End);
+	float clamp(float value, float min, float max);
 	
 	Vector position;
 	float speed;
+	float rotRad;
 	int acceleration;
 	int accelerationLimit;
 	int steering;
@@ -51,8 +56,9 @@ private:
 	std::vector<Vector> gotoTargets;
 	std::vector<Vector> manhattanTargets;
 	bool autonomous;
-	bool turnAround;
+	bool turn;
 	bool turnAroundLeft;
+	bool stop;
 	bool recalculateManhattan;
 	float travelDistance;
 	float travelDistanceLimit;

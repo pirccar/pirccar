@@ -144,25 +144,19 @@ namespace CarSimulator
             */
 
             // office
-            
-            RealWorldObject realObject = new RealWorldObject(new Vector2(0, 600), 500, 25, texture);
-            realObjects.Add(realObject);
-            realObject = new RealWorldObject(new Vector2(0, 300), 500, 25, texture);
-            realObjects.Add(realObject);
-            realObject = new RealWorldObject(new Vector2(750, 600), 500, 25, texture);
-            realObjects.Add(realObject);
-            realObject = new RealWorldObject(new Vector2(750, 300), 500, 25, texture);
-            realObjects.Add(realObject);
 
-            realObject = new RealWorldObject(new Vector2(25, 0), 500, 25, texture);
-            realObjects.Add(realObject);
-            realObject = new RealWorldObject(new Vector2(750, 0), 500, 25, texture);
+            RealWorldObject realObject = new RealWorldObject(new Vector2(25, 0), 1200, 25, texture);
             realObjects.Add(realObject);
             realObject = new RealWorldObject(new Vector2(0, 0), 25, 900, texture);
             realObjects.Add(realObject);
+            realObject = new RealWorldObject(new Vector2(1225, 0), 25, 900, texture);
+            realObjects.Add(realObject);
             realObject = new RealWorldObject(new Vector2(0, 900), 1250, 25, texture);
             realObjects.Add(realObject);
-            realObject = new RealWorldObject(new Vector2(1250, 0), 25, 925, texture);
+
+            realObject = new RealWorldObject(new Vector2(225, 300), 1000, 25, texture);
+            realObjects.Add(realObject);
+            realObject = new RealWorldObject(new Vector2(25, 600), 1000, 25, texture);
             realObjects.Add(realObject);
             
             goHomeIndex = -1;
@@ -184,6 +178,16 @@ namespace CarSimulator
 
             reverseSensors[0].SetInternalRotation(-MathHelper.Pi + (MathHelper.Pi / 180) * 5);
             reverseSensors[1].SetInternalRotation(MathHelper.Pi - (MathHelper.Pi / 180) * 5);
+        }
+
+        public bool IsAutonomous()
+        {
+            return autonomous;
+        }
+
+        public int TargetCount()
+        {
+            return gotoTargets.Count;
         }
 
         public Vector2 GetPosition()
@@ -452,6 +456,7 @@ namespace CarSimulator
 
                     if (scanIndex == 0 && travelDistance == 0) //last scan, check if the car will collide with anything etc
                     {
+                        //recalculateManhattan = true;
                         CheckCollision(rotRad, Vector2.Distance(position, gotoTargets[gotoTargets.Count - 1]));
                         scanning = false;
                         if (collisionPathDetected) //should indicate that the car will hit something
@@ -979,7 +984,7 @@ namespace CarSimulator
             position += addVector * speed * reverse * dt;
 
             if (autonomous)
-                travelDistance += Math.Abs(speed * reverse * dt);
+                travelDistance += speed * dt;
 
             lineListDistance += speed * dt;
             sensor.SetPosition(position);
