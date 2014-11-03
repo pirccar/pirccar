@@ -57,8 +57,10 @@ namespace CarSimulator
         bool renderRealWorld;
         bool autonomous;
         bool turnAround;
+        bool turnAroundStraight;
         bool turnAroundLeft;
         bool recalculateManhattan;
+        bool dontRecalculateManhattan;
         float travelDistance;
         float travelDistanceLimit;
         int scanSteps;
@@ -70,6 +72,8 @@ namespace CarSimulator
         int collRight;
         Vector2? lineStart;
         Vector2? lineEnd;
+        int avoidSteering;
+        int manhattanDistance = 150;
 
         List<ServoTiming> goHomeData;
         int goHomeIndex;
@@ -93,6 +97,7 @@ namespace CarSimulator
             this.direction = new Vector2(1, 0);
             speed = 0.0f;
             steering = 0.0f;
+            rotRad = 0;
             rotation = Quaternion.Identity;
             reverse = 1;
             accelerationLimit = 8;
@@ -122,6 +127,7 @@ namespace CarSimulator
             gotoTargets = new List<Vector2>();
             manhattanTargets = new List<Vector2>();
             turnAround = false;
+            turnAroundStraight = true;
             scanning = false;
 
             realObjects = new List<RealWorldObject>();
@@ -144,7 +150,7 @@ namespace CarSimulator
             */
 
             // office
-
+            
             RealWorldObject realObject = new RealWorldObject(new Vector2(25, 0), 1200, 25, texture);
             realObjects.Add(realObject);
             realObject = new RealWorldObject(new Vector2(0, 0), 25, 900, texture);
@@ -270,9 +276,9 @@ namespace CarSimulator
             
         } //calculate a speed depending on distance to travel
 
-        private void CalculateSpeedPid(float distance, GameTime gameTime)
+        private void CalculateSpeedPid(float distance, float gameTime)
         {
-            float timeNow = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            float timeNow = gameTime;
 
             errorSum += (distance * timeNow);
             float dErr = (distance - lastError) / timeNow;
@@ -281,7 +287,7 @@ namespace CarSimulator
             lastError = distance;
         } //speed calculation using pid controller
 
-        private void InternalGoHome(GameTime gameTime)
+        private void InternalGoHome(float gameTime)
         {
             if (goHomeIndex == goHomeTargetIndex) //this idicates that we have gone thru every state
             {
@@ -327,7 +333,7 @@ namespace CarSimulator
                     acceleration = 5;*/
                 CalculateSpeed(temp.distance);
                 //CalculateSpeedPid(temp.distance, gameTime);
-                temp.distance -= speed * (float)gameTime.ElapsedGameTime.TotalSeconds; //decrease the distance by current speed * time = distance this iteration
+                temp.distance -= speed * gameTime; //decrease the distance by current speed * time = distance this iteration
                 goHomeData[goHomeIndex] = temp; //and put it back into our list for next iteration
             }
             else //we have reached a checkpoint!
@@ -346,7 +352,7 @@ namespace CarSimulator
             prevGearValue = reverse; //used to check for stopping
         } 
 
-        private void saveStates(GameTime gameTime)
+        private void saveStates(float gameTime)
         {
             if(goHomeIndex == -1) //first state, save everything so we get a base value to work from
             {
@@ -383,7 +389,7 @@ namespace CarSimulator
                 }
 
                 ServoTiming temp = goHomeData.ElementAt(goHomeIndex); //Extract previous state from list
-                temp.distance += speed * (float)gameTime.ElapsedGameTime.TotalSeconds; //add some distance (if any)
+                temp.distance += speed * gameTime; //add some distance (if any)
                 goHomeData[goHomeIndex] = temp; //put it back into our list
 
                 if (diff) //if we found out that something has changed then add a new state
@@ -395,7 +401,7 @@ namespace CarSimulator
             }
         }
 
-        private void ParseServos(GameTime gameTime)
+        private void ParseServos(float gameTime)
         {
             acceleration = servos[1].GetValue() - 180;
             reverse = servos[2].GetValue() > 0 ? -1 : 1;
@@ -417,7 +423,7 @@ namespace CarSimulator
             gotoTargets.Add(target);
         } //add target to drive to
 
-        private void AutonomousUpdate(GameTime gameTime)
+        private void AutonomousUpdate(float gameTime)
         {
             if (gotoTargets.Count == 0) //indicates that there are not more targets to go to, car is done
             {
@@ -456,26 +462,43 @@ namespace CarSimulator
 
                     if (scanIndex == 0 && travelDistance == 0) //last scan, check if the car will collide with anything etc
                     {
-                        //recalculateManhattan = true;
+                        recalculateManhattan = true;
                         CheckCollision(rotRad, Vector2.Distance(position, gotoTargets[gotoTargets.Count - 1]));
                         scanning = false;
                         if (collisionPathDetected) //should indicate that the car will hit something
                             TurnAround();
-                        if (Vector2.Distance(position, gotoTargets[gotoTargets.Count - 1]) > 100 && recalculateManhattan)
+                        if (Vector2.Distance(position, gotoTargets[gotoTargets.Count - 1]) > 100 && recalculateManhattan && !dontRecalculateManhattan)
                             ManhattanCalculation(); //path finding.
 
-                        //travelDistanceLimit = 300;
+                        dontRecalculateManhattan = false;
                     }
                 }
             }
-            else //if(gotoTargetIndex != -1) //the car is moving towards a target
+            else
             {
-                if(CheckPassiveSensors())
+                int passive = CheckPassiveSensors();
+                if(passive != 0)
                 {
-                    collisionPathDetected = true;
-                    travelDistanceLimit = 0;
-                    recalculateManhattan = true;
-                    return;
+                    if(passive == 1)
+                    {
+                        avoidSteering = 28;
+                    }
+                    else if (passive == 8)
+                    {
+                        avoidSteering = -28;
+                    }
+                    else
+                    {
+                        avoidSteering = 0;
+                        collisionPathDetected = true;
+                        travelDistanceLimit = 0;
+                        recalculateManhattan = true;
+                        return;
+                    }
+                }
+                else
+                {
+                    avoidSteering = 0;
                 }
 
                 Vector2 dir = new Vector2((float)Math.Cos(rotRad), (float)Math.Sin(rotRad)); //dirrection of car
@@ -491,7 +514,7 @@ namespace CarSimulator
                 float v2 = (float)Math.Atan2(dir.Y, dir.X);
                 float angleToTarget = v1 - v2; //the angle to the target in radians
 
-                while(angleToTarget > Math.PI || angleToTarget < -Math.PI)
+                while(angleToTarget > (float)Math.PI || angleToTarget < (float)-Math.PI)
                 {
                     if(angleToTarget > Math.PI)
                     {
@@ -506,6 +529,7 @@ namespace CarSimulator
                 }
 
                 steering = (int)MathHelper.ToDegrees(angleToTarget); //set steering
+                steering += avoidSteering;
                 steering = -(int)MathHelper.Clamp(steering, -48, 48); //and clamp it, car cant turn at 180 degree angles
 
                 if (manhattanTargets.Count > 0 && distance > 100)
@@ -517,7 +541,7 @@ namespace CarSimulator
                     gotoTargets.RemoveAt(gotoTargets.Count - 1);
                     travelDistanceLimit = 0;
                 }
-                else if(distance <= 30.0f && manhattanTargets.Count >= 1)
+                else if (distance <= manhattanDistance && manhattanTargets.Count >= 1)
                 {
                     manhattanTargets.RemoveAt(manhattanTargets.Count - 1);
                 }
@@ -537,9 +561,10 @@ namespace CarSimulator
                 ManhattanSquare first = new ManhattanSquare(); //current location
                 int index = -1;
                 first.pos = currentMPos;
-                int manhattanDistance = 100;
+                
                 closedList.Add(first);
                 bool done = false;
+                int zeroTimes = 0;
 
                 while(!done) //done will be set when we have a found a manhattan square that covers the target
                 {
@@ -573,31 +598,10 @@ namespace CarSimulator
                                     Rectangle cRect = new Rectangle((int)closedList[i].pos.X - manhattanDistance / 2, (int)closedList[i].pos.Y - manhattanDistance/2, manhattanDistance, manhattanDistance);
                                     if (cRect.Contains(position))
                                     {
-                                        foundHome = true; //it did, now to remove some redundant squares
-                                        
-                                        /*
-                                        for (int j = manhattanTargets.Count -1; j >= 0; j -= 2) //this should be omptimized :)
-                                        {
-                                            manhattanTargets.RemoveAt(j);
-                                        }*/
-                                        
+                                        foundHome = true; //it did, now to remove some redundant square                                        
                                         break;
                                     }
                                     Vector2 dir = closedList[i].parent - closedList[i].pos;
-                                    
-                                    /*
-                                    if (dir.X != lastDir.X && dir.Y != lastDir.Y) //if we have found a square that has a difference in x and y
-                                    {
-                                        manhattanTargets.Add(closedList[i].pos); //then add this square as a manhattan target
-                                        lastDir = dir;
-                                    }*/
-
-                                    /*
-                                    if (dir != lastDir) //if we have found a square that has a difference in x and y
-                                    {
-                                        manhattanTargets.Add(closedList[i].pos); //then add this square as a manhattan target
-                                        lastDir = dir;
-                                    }*/
 
                                     manhattanTargets.Add(closedList[i].pos); //then add this square as a manhattan target
                                     lastDir = dir;
@@ -710,16 +714,28 @@ namespace CarSimulator
                             index = i; //and save the index so we know which one to use
                         }
                     }
-                    lastPos = currentMPos;
-                    currentMPos = openList[index].pos; //move the best location
-                    closedList.Add(openList[index]);
-                    openList.RemoveAt(index);
+
+                    if (openList.Count == 0)
+                        zeroTimes++;
+                    else
+                    {
+                        lastPos = currentMPos;
+                        currentMPos = openList[index].pos; //move the best location
+                        closedList.Add(openList[index]);
+                        openList.RemoveAt(index);
+                        zeroTimes = 0;
+                    }
+
+                    if (zeroTimes >= 10)
+                        return;
+                  
+                    index = -1;
                 }    
             }
                
         }
 
-        private void InternalScan(GameTime gameTime)
+        private void InternalScan(float gameTime)
         {
             if (sensorLeft) //move sensor to the left... or to the right
                 sensor.SetRotationTarget((float)(Math.PI / scanSteps) * (float)scanIndex - MathHelper.PiOver2);
@@ -758,9 +774,9 @@ namespace CarSimulator
             }
         }
 
-        private bool CheckPassiveSensors()
+        private int CheckPassiveSensors()
         {
-            bool returnValue = false;
+            int returnValue = 0;
 
             for (int i = 0; i < passiveSensors.Length; i++)
             {
@@ -771,11 +787,9 @@ namespace CarSimulator
                     float? sensorValue = passiveSensors[i].Intersect(realObjects[j].GetRectangle());
                     if (sensorValue != null)
                     {
-                        returnValue = sensorValue.Value < Math.Max(speed, 60);
-                        if (returnValue)
-                            return returnValue;
-                        else
-                            accelerationLimit = (int)(Math.Min(sensorValue.Value / 10.0f, 15));
+                        returnValue += sensorValue.Value < Math.Max(speed, 60) ? 1 << i : 0 ;
+                        
+                        accelerationLimit = (int)(Math.Min(sensorValue.Value / 10.0f, 10));
                     }
                 }
             }
@@ -853,7 +867,8 @@ namespace CarSimulator
             turnAround = true;
             stop = true;
             travelDistance = 0;
-            turnAroundLeft = !turnAroundLeft;
+            if(!turnAroundStraight)
+                turnAroundLeft = !turnAroundLeft;
             collisionPathDetected = false;
         }
 
@@ -861,13 +876,21 @@ namespace CarSimulator
         {
             if(turnAround)
             {
-                steering = turnAroundLeft ? -48 : 48;
+                
+                if (turnAroundStraight)
+                    steering = 0;
+                else
+                    steering = turnAroundLeft ? -48 : 48;
                 reverse = -1;
                 float dist = 200.0f;
                 acceleration = 5;
 
                 if (travelDistance >= dist || travelDistance > travelDistanceLimit || CheckReverseSensors())
                 {
+                    if (CheckReverseSensors())
+                        turnAroundStraight = false;
+                    else
+                        turnAroundStraight = true;
                     stop = true;
                     acceleration = 0;
                     steering = 0;
@@ -875,6 +898,7 @@ namespace CarSimulator
                         reverse = 1;
                     turnAround = false;
                     travelDistance =  travelDistanceLimit;
+                    dontRecalculateManhattan = true;
                 }
 
             }
@@ -938,9 +962,9 @@ namespace CarSimulator
             }
         }
 
-        private void UpdatePosition(GameTime gameTime)
+        private void UpdatePosition(float gameTime)
         {
-            float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            float dt = gameTime;
             float calculatedAcc = acceleration;
             calculatedAcc *= 5;
             if (calculatedAcc == 0) //Throttle released
@@ -955,11 +979,11 @@ namespace CarSimulator
                 calculatedAcc = -calculatedAcc;
             }
 
-            speed = speed + calculatedAcc * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            speed = speed + calculatedAcc * dt;
 
             float x = (tireRowSpacing / Math.Abs((float)Math.Atan(steering)) + tireWidth / 2);
             float r = (float)Math.Sqrt(x * x + (tireRowSpacing / 2) * (tireRowSpacing / 2));
-            float theta = speed * reverse * (float)gameTime.ElapsedGameTime.TotalSeconds / r;
+            float theta = speed * reverse * dt / r;
 
             if (steering > 0.0f)
                 theta = -theta;
@@ -967,9 +991,7 @@ namespace CarSimulator
             rotation = rotation * Quaternion.CreateFromAxisAngle(new Vector3(0, 0, 1), theta);
 
             Vector2 right = new Vector2(1, 0);
-            //Vector2 addVector = Vector2.Transform(right, rotation);
             Vector2 addVector;
-           
 
             rotRad += theta;
 
@@ -991,7 +1013,7 @@ namespace CarSimulator
             sensor.SetDirection(rotRad);
         }
 
-        public void Update(GameTime gameTime)
+        public void Update(float gameTime)
         {
             if (!goHome && !autonomous)
             {

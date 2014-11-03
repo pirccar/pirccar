@@ -77,6 +77,7 @@ namespace CarSimulator
         public void SetRotationTarget(float target)
         {
             roationTarget = target;
+            //internalRotation = target;
         }
 
         public bool Rotating()
@@ -93,7 +94,7 @@ namespace CarSimulator
             spriteBatch.Draw(texture, r, null, Color.DarkViolet, angle, Vector2.Zero, SpriteEffects.None, 0);
         }
 
-        public void Update(GameTime gameTime)
+        public void Update(float gameTime)
         {
             if (Math.Round(internalRotation, 2) > Math.Round(roationTarget, 2))
             {
@@ -109,7 +110,7 @@ namespace CarSimulator
                 stop = true;
 
             if (stop == false)
-                internalRotation += MathHelper.ToRadians(45.0f) * (goingRight ? 1 : -1) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                internalRotation += MathHelper.ToRadians(45.0f) * (goingRight ? 1 : -1) * gameTime;
         }
 
         public void Draw(SpriteBatch spriteBatch)

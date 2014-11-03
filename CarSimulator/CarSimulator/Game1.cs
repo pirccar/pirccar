@@ -24,7 +24,6 @@ namespace CarSimulator
         List<Vector2> targets;
         double startTime;
         double currentTime;
-        bool lastAutonomousValue;
 
         public Game1()
             : base()
@@ -47,7 +46,8 @@ namespace CarSimulator
             basicTexture.SetData(new Color[] {Color.White});
             car = new Car(spawnPos, basicTexture);
             targets  = new List<Vector2>();
-            targets.Add(new Vector2(1000, 150)); //trippleRoom target
+            targets.Add(new Vector2(1000, 150)); //s curve
+            //targets.Add(new Vector2(150, 800));
             startTime = -1;
             currentTime = -1;
             
@@ -103,7 +103,7 @@ namespace CarSimulator
             if (input.buttonDown(Buttons.Back) || input.keyDown(Keys.A))
                 car.ToggleAutonomous();
 
-            car.Update(gameTime);
+            car.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
 
             if (startTime == -1 && car.IsAutonomous())
                 startTime = gameTime.TotalGameTime.TotalSeconds;
