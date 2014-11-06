@@ -129,6 +129,7 @@ namespace CarSimulator
             
             car.Draw(spriteBatch);
             spriteBatch.DrawString(font, Math.Round(car.GetPosition().X, 2) + ":" + Math.Round(car.GetPosition().Y, 2), new Vector2(5, 5), Color.Black);
+            spriteBatch.DrawString(font, Math.Round(car.GetTravelDistance(), 2).ToString(), new Vector2(250, 5), Color.Black);
             spriteBatch.DrawString(font, Math.Round(car.GetSteering(), 2).ToString(), new Vector2(650, 5), Color.Black);
             spriteBatch.DrawString(font, Math.Round(car.GetSpeed(),1).ToString(), new Vector2(750, 5), Color.Black);
             spriteBatch.DrawString(font, Math.Round(MathHelper.ToDegrees(car.GetRotation()), 1).ToString(), new Vector2(550, 5), Color.Black);

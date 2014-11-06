@@ -108,10 +108,10 @@ void Autonomous::update()
 
 void Autonomous::updatePosition()
 {
-	//TODO NEED TIMER
+	float dt = getDT();
 	float x = (50 / fabs(atan(steering)) + 25);
 	float r = (float)sqrt(x * x + 25 * 25);
-	float theta = speed * reverse / r; //NEED TIMER AND CALCULATION OF REVERSE VALUE!!!
+	float theta = speed * reverse * dt / r; //NEED CALCULATION OF REVERSE VALUE!!!
 	
 	if(steering > 0.0f)
 		theta = -theta;
@@ -123,10 +123,9 @@ void Autonomous::updatePosition()
 		rotRad = PI_F * 2 + rotRad;
 	
 	Vector addVector = Vector((float)cos(rotRad), (float)sin(rotRad), 0);
-	position = Add(position, ScalarVecMul(speed * reverse, addVector)); //NEED TIMER + REVERSE FIX
+	position = Add(position, ScalarVecMul(speed * reverse * dt, addVector)); // REVERSE FIX
 	
-	travelDistance += speed; // add timer
-	
+	travelDistance += speed * dt;
 }
 
 void Autonomous::toggleAutonomous()
@@ -389,4 +388,17 @@ float Autonomous::clamp(float value, float min, float max)
 		value = max;
 	
 	return value;
+}
+
+float Autonomous::getDT()
+{
+	struct timeval now;
+	gettimeofday(&now, NULL);
+	long seconds, useconds;
+	
+	seconds = now.tv_sec - previousTime.tv_sec;
+	useconds = now.tv_usec - previousTime.tv_usec;
+	
+	previousTime = now;
+	return seconds + useconds / 1000000.0;
 }

@@ -73,7 +73,7 @@ namespace CarSimulator
         Vector2? lineStart;
         Vector2? lineEnd;
         int avoidSteering;
-        int manhattanDistance = 150;
+        int manhattanDistance = 50;
 
         List<ServoTiming> goHomeData;
         int goHomeIndex;
@@ -220,6 +220,11 @@ namespace CarSimulator
         {
             return rotRad;
         } //get cars rotation
+
+        public float GetTravelDistance()
+        {
+            return travelDistance;
+        }
 
         public void Reset()
         {
@@ -425,9 +430,10 @@ namespace CarSimulator
 
         private void AutonomousUpdate(float gameTime)
         {
-            if (gotoTargets.Count == 0) //indicates that there are not more targets to go to, car is done
+            if (gotoTargets.Count == 0) //indicates that there are no more targets to go to, car is done
             {
                 acceleration = 0;
+                steering = 0;
                 return;
             }
             else if(stop)
@@ -463,7 +469,7 @@ namespace CarSimulator
                     if (scanIndex == 0 && travelDistance == 0) //last scan, check if the car will collide with anything etc
                     {
                         recalculateManhattan = true;
-                        CheckCollision(rotRad, Vector2.Distance(position, gotoTargets[gotoTargets.Count - 1]));
+                        CheckCollision(rotRad, 100.0f);//Vector2.Distance(position, gotoTargets[gotoTargets.Count - 1]));
                         scanning = false;
                         if (collisionPathDetected) //should indicate that the car will hit something
                             TurnAround();
@@ -561,6 +567,7 @@ namespace CarSimulator
                 ManhattanSquare first = new ManhattanSquare(); //current location
                 int index = -1;
                 first.pos = currentMPos;
+                bool firstIteration = true;
                 
                 closedList.Add(first);
                 bool done = false;
@@ -653,8 +660,33 @@ namespace CarSimulator
                             s.parent = currentMPos; //and set the parent
                             Vector2 newDir = s.pos - s.parent;
                             Vector2 lastDir = s.parent - lastPos;
-                            s.g = closedList[closedList.Count - 1].g + (newDir != lastDir ? manhattanDistance : 0); //calculate g score
-                            //s.g = closedList[closedList.Count - 1].g + manhattanDistance;
+                            newDir.Normalize();
+                            lastDir.Normalize();
+
+                            if(firstIteration)
+                            {
+                                if (i == 0 && (rotRad >= MathHelper.Pi + MathHelper.PiOver4 && rotRad < MathHelper.TwoPi - MathHelper.PiOver4))
+                                    s.g = closedList[closedList.Count - 1].g;
+                                else if (i == 1 && (rotRad >= MathHelper.Pi + MathHelper.PiOver4 * 3 || rotRad < MathHelper.PiOver4))
+                                {
+                                    s.g = closedList[closedList.Count - 1].g;
+                                }
+                                else if (i == 2 && (rotRad >= MathHelper.PiOver4 && rotRad < MathHelper.PiOver4 * 3))
+                                {
+                                    s.g = closedList[closedList.Count - 1].g;
+                                }
+                                else if (i == 3 && (rotRad >= MathHelper.PiOver4 * 3 && rotRad < MathHelper.Pi + MathHelper.PiOver4))
+                                {
+                                    s.g = closedList[closedList.Count - 1].g;
+                                }
+                                else
+                                {
+                                    s.g = closedList[closedList.Count - 1].g + manhattanDistance / 4;
+                                }
+                                
+                            }
+                            else
+                                s.g = closedList[closedList.Count - 1].g + (newDir != lastDir ? manhattanDistance / 4 : 0); //calculate g score
                             s.h = (int)(Math.Abs(finalDestination.X - directions[i].X) + Math.Abs(finalDestination.Y - directions[i].Y)); //calculate h score
                             s.f = s.g + s.h; //f score = g + h
                             bool inList = false; //check if this square is already known to us!
@@ -730,6 +762,7 @@ namespace CarSimulator
                         return;
                   
                     index = -1;
+                    firstIteration = false;
                 }    
             }
                
@@ -837,12 +870,12 @@ namespace CarSimulator
             }
             if (collision) //if the car will collide with anything the car should try to avoid it!
             {
-                travelDistanceLimit = 100.0f; //but only drive for X units, experimental value
+                travelDistanceLimit = 50.0f; //but only drive for X units, experimental value
             }
             else
             {
                 //no collision at current path!
-                travelDistanceLimit = 250.0f;
+                travelDistanceLimit = 75.0f;
             }
         }
 

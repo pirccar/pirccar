@@ -567,6 +567,30 @@ socket.cpp.s:
 	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/socket.cpp.s
 .PHONY : socket.cpp.s
 
+speedMeter.o: speedMeter.cpp.o
+.PHONY : speedMeter.o
+
+# target to build an object file
+speedMeter.cpp.o:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/speedMeter.cpp.o
+.PHONY : speedMeter.cpp.o
+
+speedMeter.i: speedMeter.cpp.i
+.PHONY : speedMeter.i
+
+# target to preprocess a source file
+speedMeter.cpp.i:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/speedMeter.cpp.i
+.PHONY : speedMeter.cpp.i
+
+speedMeter.s: speedMeter.cpp.s
+.PHONY : speedMeter.s
+
+# target to generate assembly for a file
+speedMeter.cpp.s:
+	$(MAKE) -f CMakeFiles/carserver.dir/build.make CMakeFiles/carserver.dir/speedMeter.cpp.s
+.PHONY : speedMeter.cpp.s
+
 thread.o: thread.cpp.o
 .PHONY : thread.o
 
@@ -657,6 +681,9 @@ help:
 	@echo "... socket.o"
 	@echo "... socket.i"
 	@echo "... socket.s"
+	@echo "... speedMeter.o"
+	@echo "... speedMeter.i"
+	@echo "... speedMeter.s"
 	@echo "... thread.o"
 	@echo "... thread.i"
 	@echo "... thread.s"

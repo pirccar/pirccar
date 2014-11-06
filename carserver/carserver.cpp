@@ -28,6 +28,7 @@
 #include "musicThread.h"
 #include "autoHome.h"
 #include <jpeglib.h>
+#include "speedMeter.h"
 
 #include "pca9685.h"
 #include "rs232.h"
@@ -343,6 +344,7 @@ int main()
 	SendThread* sendThread; // = new SendThread(); we no longer create the thread here, we will then pass null to adc thread
 	AdcThread* adc = new AdcThread(lcd, NULL);
 	ServoControlThread* servo = new ServoControlThread();
+	SpeedMeter* speedMeter = new SpeedMeter();
 	music = new MusicThread();
 	
 	if(!bcm2835_init()){
@@ -358,10 +360,20 @@ int main()
 //	PCA9685_reset();
 //	setPWMFreq(50);
 	
-	servo->start();
-	adc->start();
-	lcd->start();
-	music->start();
+	//servo->start();
+	//adc->start();
+	//lcd->start();
+	//music->start();
+	
+	speedMeter->start();
+	float lastSpeed = 0;
+	while(speedMeter->getAlive())
+	{
+		float speed = speedMeter->getSpeed();
+		if(speed != lastSpeed)
+			//printf("Speed: %f \n", speed);
+		lastSpeed = speed;
+	}
 	
 	serverPort = 8001;
 	
@@ -399,7 +411,7 @@ int main()
 		autoHome.reset();
 		clientLen = sizeof(clientAddr);
 		sendThread = new SendThread(); //create sendthread here instead, it will then recreate itself on every new connect
-		
+		printf("Waiting for connection \n");
 		if((clientSocket = accept(serverSocket, (sockaddr*) &clientAddr, &clientLen)) < 0)
 			printf("Accept failed \n");
 			

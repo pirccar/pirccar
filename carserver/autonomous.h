@@ -43,6 +43,7 @@ private:
 	bool rectangleContains(float x, float y, int width, int height, Vector target);
 	bool lineIntersect(Vector p0Start, Vector p0End, Vector p1Start, Vector p1End);
 	float clamp(float value, float min, float max);
+	float getDT();
 	
 	Vector position;
 	float speed;
@@ -70,4 +71,6 @@ private:
 	int collRight;
 	Vector lineStart;
 	Vector lineEnd;
+	
+	struct timeval previousTime;
 };
