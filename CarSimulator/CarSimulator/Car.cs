@@ -226,6 +226,11 @@ namespace CarSimulator
             return travelDistance;
         }
 
+        public int GetVirtualLineCount()
+        {
+            return virtualWorldLines.Count;
+        }
+
         public void Reset()
         {
             position = new Vector2(200, 300);
@@ -477,6 +482,9 @@ namespace CarSimulator
                             ManhattanCalculation(); //path finding.
 
                         dontRecalculateManhattan = false;
+
+                        while (virtualWorldLines.Count > 500)
+                            virtualWorldLines.RemoveAt(0);
                     }
                 }
             }
@@ -723,14 +731,26 @@ namespace CarSimulator
                             {
                                 if (virtualWorldLines[j] == null)
                                     continue;
+
                                 Vector2 start = new Vector2(s.pos.X - manhattanDistanceVector.X, s.pos.Y - manhattanDistanceVector.Y);
-                                Vector2 end = new Vector2(s.pos.X + manhattanDistanceVector.X, s.pos.Y + manhattanDistanceVector.Y);
-                                if (lineIntersect(virtualWorldLines[j].Value.start, virtualWorldLines[j].Value.end, start, end))
+                                bool squareCollide = false;
+                                for (int k = 0; k < 4; k++)
                                 {
-                                    colls[i] = true;
-                                    inList = true;
-                                    break;
+                                    Vector2 end = new Vector2(s.pos.X + ((k >= 0 && k < 2) ? manhattanDistanceVector.X : -manhattanDistanceVector.X)
+                                        , s.pos.Y + ((k >= 1 && k < 3) ? manhattanDistanceVector.Y : -manhattanDistanceVector.Y));
+                                    if (lineIntersect(virtualWorldLines[j].Value.start, virtualWorldLines[j].Value.end, start, end))
+                                    {
+                                        colls[i] = true;
+                                        inList = true;
+                                        squareCollide = true;
+                                        break;
+                                    }
+
+                                    start = end;
                                 }
+
+                                if (squareCollide)
+                                    break;
                             }
 
                             if (!inList) //if the square wasn't known to us then lets add it

@@ -57,13 +57,13 @@ void SpeedMeter::mainLoop(void)
 	lastHigh = high;
 	*/
 	counter += getDT(); //add DT to counter
-	float sampleTime = 0.5f; //set the sampleTime
+	float sampleTime = 0.2f; //set the sampleTime
 	if(counter >= sampleTime)
 	{
 		speed = (1.425f * nInterrupts) / sampleTime; //cm\s
-		printf("NI: %d speed: %f\n", nInterrupts, speed);
+		//printf("NI: %d speed: %f\n", nInterrupts, speed);
 		nInterrupts = 0; //reset interrupts counter
-		counter -= sampleTime; //and remove smapleTime from time counter
+		counter -= sampleTime; //and remove sampleTime from time counter
 	}
 	usleep(5000); //sleep for a while
 }

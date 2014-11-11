@@ -904,7 +904,7 @@ namespace RCClient
                 strafe = !strafe;
             }
 
-            if(input.buttonDown(Buttons.X))
+            if(input.buttonDown(Buttons.X) || input.keyDown(Keys.A))
             {
                 connection.send("GOH");
             }

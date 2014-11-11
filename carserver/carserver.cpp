@@ -28,7 +28,7 @@
 #include "musicThread.h"
 #include "autoHome.h"
 #include <jpeglib.h>
-#include "speedMeter.h"
+#include "autonomous.h"
 
 #include "pca9685.h"
 #include "rs232.h"
@@ -77,6 +77,7 @@ std::string chann2String;
 std::string chann3String;
 
 AutoHome autoHome;
+Autonomous autonomous;
 int lastAutoHomeIndex;
 
 
@@ -183,6 +184,7 @@ int parseMessage(char buf[], int size){
 		printf("Config was received \n");
 		
 		autoHome.setChannels(steeringFChannel, steeringBChannel, throttleChannel, gearChannel);
+		autonomous.setChannels(throttleChannel, steeringFChannel, steeringBChannel, gearChannel);
 		gotConfig = true;
 	}
 	else if(buf[0] == 'M')
@@ -191,7 +193,8 @@ int parseMessage(char buf[], int size){
 	}
 	else if(buf[0] == 'G' && buf[1] == 'O' && buf[2] == 'H')
 	{
-		autoHome.goHome();
+		autonomous.toggleAutonomous(true);
+		//autoHome.goHome();
 	}
 	else if(ready){ //is command S010400 = set servo 1 to 400 off
 		//printf("Got servo data \n");
@@ -226,7 +229,7 @@ int parseMessage(char buf[], int size){
 				val[4] = '\0';
 				
 				value = atoi((const char*)&val);
-				if(servo != throttleChannel)
+				if(servo == gearChannel)
 				{
 					//Steering etc BVA
 					if(value < 130)
@@ -238,6 +241,32 @@ int parseMessage(char buf[], int size){
 					{
 						printf("Value abow max!, setting to max \n");
 						value = 470;
+					}
+				}
+				else if(servo == steeringFChannel || servo == steeringBChannel)
+				{
+					if(value < 340-48)
+					{
+						printf("Servo %i below min (%i), setting to min \n", servo, value);
+						value = 340-48;
+					}
+					else if(value > 340+48)
+					{
+						printf("Value abow max!, setting to max \n");
+						value = 340+48;
+					}
+				}
+				else if(servo == throttleChannel)
+				{
+					if(value < 180)
+					{
+						printf("Servo %i below min (%i), setting to min \n", servo, value);
+						value = 180;
+					}
+					else if(value > 220)
+					{
+						printf("Value abow max!, setting to max \n");
+						value = 220;
 					}
 				}
 				else if(obstructed) //if obstructed (IR camera detected something) don't let the car move forward
@@ -344,7 +373,7 @@ int main()
 	SendThread* sendThread; // = new SendThread(); we no longer create the thread here, we will then pass null to adc thread
 	AdcThread* adc = new AdcThread(lcd, NULL);
 	ServoControlThread* servo = new ServoControlThread();
-	SpeedMeter* speedMeter = new SpeedMeter();
+	//SpeedMeter* speedMeter = new SpeedMeter();
 	music = new MusicThread();
 	
 	if(!bcm2835_init()){
@@ -360,11 +389,12 @@ int main()
 //	PCA9685_reset();
 //	setPWMFreq(50);
 	
-	//servo->start();
-	//adc->start();
-	//lcd->start();
-	//music->start();
+	servo->start();
+	adc->start();
+	lcd->start();
+	music->start();
 	
+	/*
 	speedMeter->start();
 	float lastSpeed = 0;
 	while(speedMeter->getAlive())
@@ -373,7 +403,9 @@ int main()
 		if(speed != lastSpeed)
 			//printf("Speed: %f \n", speed);
 		lastSpeed = speed;
-	}
+	}*/
+	
+	
 	
 	serverPort = 8001;
 	
@@ -411,6 +443,7 @@ int main()
 		autoHome.reset();
 		clientLen = sizeof(clientAddr);
 		sendThread = new SendThread(); //create sendthread here instead, it will then recreate itself on every new connect
+		autonomous.addGotoTarget(Vector(300, 0, 0));
 		printf("Waiting for connection \n");
 		if((clientSocket = accept(serverSocket, (sockaddr*) &clientAddr, &clientLen)) < 0)
 			printf("Accept failed \n");
@@ -557,6 +590,7 @@ int main()
 				obstructed = false;
 			}
 			
+			/*
 			autoHome.update(); //update autohome algorithm
 			int currentHomeIndex = autoHome.getCurrentIndex(); //check if we should send new state to client
 			
@@ -574,9 +608,11 @@ int main()
 				sendThread->currentCheckpoint(currentHomeIndex);
 				lastAutoHomeIndex = currentHomeIndex;
 			}
+			*/
 		}
 		printf("Leaving connected loop\n");
 		ready = false;
+		autonomous.toggleAutonomous(false);
 		sendThread->stop(); //stop the sendthread on disconnect
 		//delete sendThread; //this will create a memory corruption, everything is freed when stop() is called
 		senderStarted = false; // so that the sendthread will start on new instance

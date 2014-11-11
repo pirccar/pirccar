@@ -8,28 +8,39 @@ Autonomous::Autonomous()
 	stop = false;
 	recalculateManhattan = false;
 	travelDistance = 0.0f;
-	travelDistanceLimit = 0.0f;
+	travelDistanceLimit = 500.0f;
 	scanSteps = 60;
 	scanIndex = 0;
 	collisionPathDetected = false;
 	scanning = false;
 	collLeft = 0;
 	collRight = 0;
+	reverse = 1;
 	speed = 0;
 	rotRad = 0;
 	acceleration = 0;
 	accelerationLimit = 7;
 	lineStart = Vector();
 	lineEnd = Vector();
+	speedMeter = new SpeedMeter();
+	speedMeter->start();
+	pthread_create(&thread, NULL, threadMain, this);
+}
+
+Autonomous::~Autonomous()
+{
+	delete speedMeter;
 }
 
 void Autonomous::update()
 {
 	//TODO add a timer
+	speed = speedMeter->getSpeed();
 	
 	if(gotoTargets.size() == 0)
 	{
 		acceleration = 0;
+		printf("Auto Done \n");
 		return;
 	}
 	else if(stop)
@@ -92,7 +103,7 @@ void Autonomous::update()
 		
 		if(manhattanTargets.size() > 0 && distance > 100)
 			distance = Distance(position, manhattanTargets[manhattanTargets.size() - 1]);
-			
+		
 		calculateSpeed(distance < travelDistanceLimit - travelDistance ? distance : travelDistanceLimit - travelDistance);
 		if(distance <= 15.0f && manhattanTargets.size() <= 1)
 		{
@@ -101,6 +112,8 @@ void Autonomous::update()
 		}
 		else if(distance <= 30.0f && manhattanTargets.size() >= 1)
 			manhattanTargets.pop_back();
+		
+		printf("Distance: %f \n", distance);
 	}
 	
 	updatePosition();
@@ -111,7 +124,7 @@ void Autonomous::updatePosition()
 	float dt = getDT();
 	float x = (50 / fabs(atan(steering)) + 25);
 	float r = (float)sqrt(x * x + 25 * 25);
-	float theta = speed * reverse * dt / r; //NEED CALCULATION OF REVERSE VALUE!!!
+	float theta = speed * reverse * dt / r;
 	
 	if(steering > 0.0f)
 		theta = -theta;
@@ -123,19 +136,29 @@ void Autonomous::updatePosition()
 		rotRad = PI_F * 2 + rotRad;
 	
 	Vector addVector = Vector((float)cos(rotRad), (float)sin(rotRad), 0);
-	position = Add(position, ScalarVecMul(speed * reverse * dt, addVector)); // REVERSE FIX
+	Vector scaled = ScalarVecMul(speed * reverse * dt, addVector);
+	position = Add(position, scaled);
 	
 	travelDistance += speed * dt;
+	//printf("Speed: %f Distance: %f Acceleration %d position.x: %f\n", speed, travelDistance, acceleration, position.x);
 }
 
-void Autonomous::toggleAutonomous()
+void Autonomous::toggleAutonomous(bool on)
 {
-	autonomous = !autonomous;
+	autonomous = on;
 }
 
 void Autonomous::addGotoTarget(Vector target)
 {
 	gotoTargets.push_back(target);
+}
+
+void Autonomous::setChannels(int throttle, int steeringF, int steeringB, int gear)
+{
+	throttleChannel = throttle;
+	steeringFChannel = steeringF;
+	steeringBChannel = steeringB;
+	gearChannel = gear;
 }
 
 void Autonomous::manhattanCalculation()
@@ -324,6 +347,7 @@ void Autonomous::turnAround()
 	turnAroundLeft = !turnAroundLeft;
 	collisionPathDetected = false;
 }
+
 void Autonomous::internalTurnAround()
 {
 	if(turn)
@@ -401,4 +425,31 @@ float Autonomous::getDT()
 	
 	previousTime = now;
 	return seconds + useconds / 1000000.0;
+}
+
+void Autonomous::setServos()
+{
+	setPWM(throttleChannel, 180 + acceleration);
+	setPWM(steeringFChannel, 320 - steering);
+	setPWM(steeringBChannel, 320 + steering);
+	if(reverse == 1)
+		setPWM(gearChannel, 130);
+	else
+		setPWM(gearChannel, 470);
+}
+
+void* Autonomous::threadMain(void* self)
+{
+	((Autonomous*)self)->homeLoop();
+}
+
+void Autonomous::homeLoop()
+{
+	while(true)
+	{
+		if(autonomous)
+			update();
+		else
+			sleep(2);
+	}
 }
